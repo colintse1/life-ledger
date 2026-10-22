@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d6b55">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>生活記錄</title>
+<style>
+:root{--bg:#f6f6f3;--cd:#fff;--tx:#1d1d1b;--mu:#6b6b66;--ac:#1d6b55;--on:#fff;--bd:#dcdcd5;--bad:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--cd:#222221;--tx:#ececea;--mu:#9a9a94;--ac:#5bbf9f;--on:#10231d;--bd:#3a3a38;--bad:#f2b8b5;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif}
+header{display:flex;flex-direction:column;padding:12px 16px 0;max-width:640px;margin:auto}
+h1{font-size:20px;margin:0}#st{font-size:12px;color:var(--mu)}
+nav{display:flex;gap:6px;padding:10px 16px;max-width:640px;margin:auto;position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:1;padding:9px 0;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:10px;font:inherit}
+nav button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+main{max-width:640px;margin:auto;padding:0 16px 40px}
+.cd{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h2{font-size:15px;margin:0 0 10px}label{display:block;font-size:13px;color:var(--mu);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:9px;background:var(--bg);color:var(--tx);font:inherit}
+.r{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{padding:10px 14px;border:0;border-radius:10px;background:var(--ac);color:var(--on);font:inherit;margin-top:10px}
+.btn.g{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.x{background:none;border:0;color:var(--bad);font:inherit;padding:4px 8px}
+.it{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--bd);font-size:14px}
+.mu{color:var(--mu);font-size:13px}.sec{display:none}.sec.on{display:block}
+textarea{min-height:120px;font:12px/1.4 ui-monospace,monospace}
+code{font-size:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<header><h1>生活記錄</h1><span id="st">載入中…</span></header>
+<nav><button data-t="in" class="on">輸入</button><button data-t="hi">歷史</button><button data-t="se">設定</button><button data-t="ba">備份同步</button></nav>
+<main>
+<section id="in" class="sec on"></section>
+<section id="hi" class="sec"></section>
+<section id="se" class="sec"></section>
+<section id="ba" class="sec"></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,"0");
+const fmt=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const addD=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return fmt(d)};
+const TODAY=fmt(new Date()),YDAY=addD(TODAY,-1);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const IDB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open("lifeledger",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+ const tx=async(m,f)=>{const d=await open();return new Promise((res,rej)=>{const t=d.transaction("kv",m);let q;try{q=f(t.objectStore("kv"))}catch(e){rej(e);return}t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})};
+ return{get:k=>tx("readonly",s=>s.get(k)),set:(k,v)=>tx("readwrite",s=>s.put(v,k))}})();
+const DEF={cur:["HKD","JPY","CNY","TWD","KRW","USD"],pay:["現金","信用卡/銀行扣款","PayPay","樂天Pay(積分)","IC卡","匯豐扣賬卡"],
+items:[{id:"weight",n:"體重",t:"num",u:"kg",w:"t"},{id:"act",n:"行動指數(共同活動次數)",t:"int",u:"",w:"y"},{id:"cig",n:"吸煙枝數",t:"int",u:"枝",w:"y"},{id:"drk",n:"有否飲酒",t:"yn",u:"",w:"y"},{id:"stp",n:"步行步數",t:"int",u:"步",w:"y"},{id:"rnk",n:"全球步數排名",t:"int",u:"",w:"y"}]};
+const SEED=[["譚仔三哥米線",78,"JPY","信用卡/銀行扣款",null],["駐車場",63,"JPY","現金",null],["高速道路料金",57,"JPY","信用卡/銀行扣款",null],["肉のハナマサ",56,"JPY","信用卡/銀行扣款",null],["業務スーパー",47,"JPY","信用卡/銀行扣款",null],["Amazon",42,"JPY","信用卡/銀行扣款",null],["ひまわり青果",37,"JPY","PayPay",null],["オーケー",35,"JPY","信用卡/銀行扣款",null],["サミット",31,"JPY","信用卡/銀行扣款",null],["Daiso",28,"JPY","信用卡/銀行扣款",null],["ニキ先生",28,"JPY","PayPay",3000],["現金回贈",27,"JPY","匯豐扣賬卡",null],["Suicaカード",26,"JPY","信用卡/銀行扣款",null],["まいばすけっと",23,"JPY","信用卡/銀行扣款",null],["セフンーイレブン",21,"JPY","信用卡/銀行扣款",null],["Tata",19,"JPY","信用卡/銀行扣款",null],["コスモ",19,"JPY","信用卡/銀行扣款",null],["ドン・キホーテ",17,"JPY","信用卡/銀行扣款",null],["三代目茂蔵",16,"JPY","現金",null],["京和商店",13,"JPY","PayPay",null]];
+let cfg=null,M={},idx=[],FQ={},ed=YDAY,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null;
+const msg=t=>{$("#st").textContent=t};
+const ld=k=>IDB.get(k),sv=(k,o)=>IDB.set(k,o),mk=d=>"m"+d.slice(0,7);
+async function gm(d){const k=mk(d);if(!M[k])M[k]=await ld(k)||{days:{}};return M[k]}
+async function gd(d){const m=await gm(d);return m.days[d]||(m.days[d]={v:{},e:[]})}
+async function sm(d){const k=mk(d);M[k]._ts=Date.now();if(!idx.includes(k)){idx.push(k);await sv("idx",{list:idx})}await sv(k,M[k]);sched()}
+async function scfg(){cfg._ts=Date.now();await sv("cfg",cfg);sched()}
+function fav(){const m={};SEED.forEach(s=>m[s[0]]={n:s[1],c:s[2],p:s[3],a:s[4]});Object.entries(FQ).forEach(([k,v])=>m[k]=Object.assign({},m[k],v));return Object.entries(m).sort((a,b)=>b[1].n-a[1].n).slice(0,20)}
+const chips=()=>fav().map(([k])=>`<button class="btn g" style="margin:3px 3px 0 0;padding:6px 10px;font-size:14px" data-ch="${esc(k)}">${esc(k)}</button>`).join("");
+function pick(k){const f=fav().find(x=>x[0]===k);if(!f)return;const v=f[1];$("#en").value=k;if(v.c&&cfg.cur.includes(v.c))$("#ec").value=v.c;if(v.p&&cfg.pay.includes(v.p))$("#ep").value=v.p;$("#ea").value=v.a!=null?v.a:"";$("#ea").focus()}
+function bump(n,a,c,p){const o=FQ[n]||{},b=(SEED.find(s=>s[0]===n)||[])[1]||0;FQ[n]={n:(o.n||b)+1,c,p,la:a,a:o.la===a?a:null}}
+function tot(e){const o={};e.forEach(x=>{if(x.k!==false)o[x.c]=(o[x.c]||0)+x.a});return Object.entries(o).map(([c,a])=>c+" "+a.toLocaleString(undefined,{maximumFractionDigits:2})).join(" / ")||"—"}
+function fld(it,val){const id="f_"+it.id,v=val==null?"":val;
+ if(it.t==="yn")return`<select id="${id}"><option value="">—</option><option value="Y"${v==="Y"?" selected":""}>有</option><option value="N"${v==="N"?" selected":""}>沒有</option></select>`;
+ return`<input id="${id}" type="number" inputmode="${it.t==="int"?"numeric":"decimal"}" step="${it.t==="int"?1:0.1}" value="${esc(v)}">`}
+async function rIn(){
+ const wd=addD(ed,1)>TODAY?TODAY:addD(ed,1),dY=await gd(ed),dT=await gd(wd),it=cfg.items.filter(i=>!i.off);
+ const rows=it.map(i=>{const d=i.w==="t"?dT:dY;return`<label>${esc(i.n)}${i.u?"("+esc(i.u)+")":""} <span class="mu">${i.w==="t"?"記在 "+wd:ed}</span></label>${fld(i,d.v[i.id])}`}).join("");
+ const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}${x.k===false?` <span class="mu">(不計入合計)</span>`:""}</span><span>${x.a.toLocaleString()} ${esc(x.c)} <button class="x" data-del="${n}">刪除</button></span></div>`).join("");
+ $("#in").innerHTML=`<div class="cd"><h2>日期(預設昨天)</h2><input type="date" id="ed" value="${ed}" max="${TODAY}"></div>
+ <div class="cd"><h2>每日項目</h2>${rows}<button class="btn" id="sdv">儲存每日項目</button></div>
+ <div class="cd"><h2>支出</h2><div>${chips()}</div><label>項目</label><input id="en" placeholder="可自由輸入,或點上面的常用項目">
+ <div class="r"><div><label>金額</label><input id="ea" type="number" inputmode="decimal" step="any"></div><div><label>幣種</label><select id="ec">${cfg.cur.map(c=>`<option${c===lastCur?" selected":""}>${esc(c)}</option>`).join("")}</select></div></div>
+ <div class="r"><div><label>付款方式</label><select id="ep"><option value="">—</option>${cfg.pay.map(p=>`<option${p===lastPay?" selected":""}>${esc(p)}</option>`).join("")}</select></div><div><label>分類(可留空)</label><input id="eg"></div></div>
+ <label><input type="checkbox" id="ek" checked style="width:auto"> 計入每日合計</label><button class="btn" id="aex">加入支出</button></div>
+ <div class="cd"><h2>${ed} 的支出</h2>${ex||'<span class="mu">還沒有記錄</span>'}<div class="it"><b>合計</b><b>${esc(tot(dY.e))}</b></div></div>`;
+ $("#ed").onchange=e=>{ed=e.target.value||YDAY;rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
+ $("#sdv").onclick=async()=>{for(const i of it){const d=i.w==="t"?dT:dY,v=$("#f_"+i.id).value;
+   if(v==="")delete d.v[i.id];else d.v[i.id]=i.t==="yn"?v:Number(v)}
+   await sm(ed);await sm(wd);$("#sdv").textContent="已儲存 ✓";setTimeout(()=>$("#sdv")&&($("#sdv").textContent="儲存每日項目"),1500)};
+ $("#aex").onclick=async()=>{const n=$("#en").value.trim(),a=parseFloat($("#ea").value);if(!n||isNaN(a))return;
+   lastCur=$("#ec").value;lastPay=$("#ep").value;const p=$("#ep").value,k=$("#ek").checked&&p!=="樂天Pay(積分)";
+   dY.e.push({n,a,c:lastCur,p,g:$("#eg").value.trim(),k});bump(n,a,lastCur,p);await sm(ed);await sv("freq",FQ);rIn()};
+ document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{dY.e.splice(+b.dataset.del,1);await sm(ed);rIn()})}
+async function rHi(m){m=m||TODAY.slice(0,7);const mo=await gm(m+"-01"),ds=Object.keys(mo.days).sort().reverse();
+ $("#hi").innerHTML=`<div class="cd"><h2>月份</h2><input type="month" id="hm" value="${m}"></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
+ return`<div class="cd"><div class="it" style="border:0;padding:0"><b>${d}</b><span>${esc(tot(x.e))}</span></div><div class="mu">${x.e.length} 筆支出${v?" ・ "+esc(v):""}</div><button class="btn g" data-ed="${d}">編輯這一天</button></div>`}).join("")||'<div class="cd mu">這個月沒有記錄</div>');
+ $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=b.dataset.ed;tab("in")})}
+function rSe(){const it=cfg.items.map((i,n)=>`<div class="it"><span>${esc(i.n)} <span class="mu">${i.t==="yn"?"是/否":i.t==="int"?"整數":"小數"}・${i.w==="t"?"記今天":"記昨天"}${i.off?"・已停用":""}</span></span><button class="x" data-tg="${n}">${i.off?"啟用":"停用"}</button></div>`).join("");
+ $("#se").innerHTML=`<div class="cd"><h2>每日項目</h2>${it}<label>新增項目名稱</label><input id="nn"><div class="r"><div><label>類型</label><select id="nt"><option value="int">整數</option><option value="num">小數</option><option value="yn">是/否</option></select></div><div><label>單位</label><input id="nu"></div></div><label>記錄哪一天</label><select id="nw"><option value="y">昨天</option><option value="t">今天</option></select><button class="btn" id="ni">新增項目</button></div>
+ <div class="cd"><h2>幣種(用逗號分隔)</h2><input id="cu" value="${esc(cfg.cur.join(","))}"><h2 style="margin-top:14px">付款方式(用逗號分隔)</h2><input id="pa" value="${esc(cfg.pay.join(","))}"><button class="btn" id="sc">儲存</button></div>`;
+ document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=async()=>{const i=cfg.items[+b.dataset.tg];i.off=!i.off;await scfg();rSe()});
+ $("#ni").onclick=async()=>{const n=$("#nn").value.trim();if(!n)return;cfg.items.push({id:"i"+Date.now(),n,t:$("#nt").value,u:$("#nu").value.trim(),w:$("#nw").value});await scfg();rSe()};
+ $("#sc").onclick=async()=>{const f=s=>s.split(",").map(x=>x.trim()).filter(Boolean);cfg.cur=f($("#cu").value);cfg.pay=f($("#pa").value);await scfg();$("#sc").textContent="已儲存 ✓"}}
+/* ---------- Dropbox (OAuth PKCE, App Folder) ---------- */
+const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const DBX={st:{},redirect:()=>location.origin+location.pathname,
+ async load(){this.st=await ld("dbx")||{}},save(){return sv("dbx",this.st)},
+ async connect(key){this.st.key=key;await this.save();const v=b64u(crypto.getRandomValues(new Uint8Array(48)));localStorage.setItem("pkce",v);
+  const ch=b64u(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)));
+  location.href="https://www.dropbox.com/oauth2/authorize?"+new URLSearchParams({client_id:key,response_type:"code",code_challenge:ch,code_challenge_method:"S256",token_access_type:"offline",redirect_uri:this.redirect()})},
+ async tok(body){const r=await fetch("https://api.dropbox.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(body)});const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.error||r.status);return j},
+ async finish(code){const j=await this.tok({code,grant_type:"authorization_code",code_verifier:localStorage.getItem("pkce"),client_id:this.st.key,redirect_uri:this.redirect()});
+  this.st.rt=j.refresh_token;this.st.at=j.access_token;this.st.exp=Date.now()+j.expires_in*1000-60000;await this.save()},
+ async token(){if(this.st.at&&Date.now()<this.st.exp)return this.st.at;const j=await this.tok({grant_type:"refresh_token",refresh_token:this.st.rt,client_id:this.st.key});
+  this.st.at=j.access_token;this.st.exp=Date.now()+j.expires_in*1000-60000;await this.save();return this.st.at},
+ async api(p,b){const r=await fetch("https://api.dropboxapi.com/2/"+p,{method:"POST",headers:{Authorization:"Bearer "+await this.token(),"Content-Type":"application/json"},body:JSON.stringify(b)});if(!r.ok)throw new Error(p+" "+r.status+" "+(await r.text()).slice(0,100));return r.json()},
+ async list(){let j=await this.api("files/list_folder",{path:"",limit:2000}),o=j.entries;while(j.has_more){j=await this.api("files/list_folder/continue",{cursor:j.cursor});o=o.concat(j.entries)}return o},
+ async up(name,text,ts){const arg={path:"/"+name,mode:"overwrite",autorename:false,mute:true,client_modified:new Date(ts).toISOString().replace(/\.\d+Z$/,"Z")};
+  const r=await fetch("https://content.dropboxapi.com/2/files/upload",{method:"POST",headers:{Authorization:"Bearer "+await this.token(),"Dropbox-API-Arg":JSON.stringify(arg),"Content-Type":"application/octet-stream"},body:text});if(!r.ok)throw new Error("upload "+name+" "+r.status+" "+(await r.text()).slice(0,100))},
+ async down(name){const r=await fetch("https://content.dropboxapi.com/2/files/download",{method:"POST",headers:{Authorization:"Bearer "+await this.token(),"Dropbox-API-Arg":JSON.stringify({path:"/"+name})}});if(!r.ok)throw new Error("download "+name+" "+r.status);return r.text()}};
+function sched(ms){if(!DBX.st.rt||!navigator.onLine)return;clearTimeout(timer);timer=setTimeout(()=>sync(),ms==null?4000:ms)}
+async function sync(){if(busy||!DBX.st.rt)return;busy=true;
+ try{msg("同步中…");const R={};(await DBX.list()).forEach(e=>{if(e[".tag"]==="file"&&/^(m\d{4}-\d{2}|cfg)\.json$/.test(e.name))R[e.name.slice(0,-5)]=Math.floor(Date.parse(e.client_modified)/1000)});
+  const keys=[...new Set([...idx,"cfg",...Object.keys(R)])];let up=0,dn=0,n=0;
+  for(const k of keys){n++;const loc=k==="cfg"?cfg:(M[k]||await ld(k)),lts=loc&&loc._ts?Math.floor(loc._ts/1000):0,rts=R[k]||0;
+   if(lts>rts){await DBX.up(k+".json",JSON.stringify(loc),loc._ts);up++}
+   else if(rts>lts){const o=JSON.parse(await DBX.down(k+".json"));await sv(k,o);if(k==="cfg")cfg=o;else{M[k]=o;if(!idx.includes(k)){idx.push(k);await sv("idx",{list:idx})}}dn++}
+   if(n%10===0)msg("同步中… "+n+" / "+keys.length+"(上傳 "+up+",下載 "+dn+")")}
+  DBX.st.last=new Date().toLocaleString();await DBX.save();msg("已同步 "+DBX.st.last+"(上傳 "+up+",下載 "+dn+")");if(dn&&$("#in").classList.contains("on"))rIn()}
+ catch(e){msg("⚠ 同步失敗:"+(e&&e.message||e))}finally{busy=false}}
+/* ---------- backup / import ---------- */
+async function all(){for(const k of idx)if(!M[k])M[k]=await ld(k)||{days:{}};return{v:1,cfg,months:M}}
+async function saveFile(name,text){const f=new File([text],name,{type:"application/json"});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e&&e.name==="AbortError")return}}
+ const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function imp(t){const s=$("#bs");let o;try{o=JSON.parse(t)}catch(e){s.textContent="檔案格式不正確";return}
+ const lb=cfg.lb;if(o.cfg){cfg=o.cfg;cfg.lb=lb;await scfg()}const ks=Object.keys(o.months||{});let n=0;
+ for(const k of ks){let m=o.months[k];if(idx.includes(k)){const ex=M[k]||await ld(k)||{days:{}};m.days=Object.assign({},ex.days,m.days)}m._ts=Date.now();M[k]=m;if(!idx.includes(k))idx.push(k);await sv(k,m);n++;if(n%10===0)s.textContent="匯入中… "+n+" / "+ks.length}
+ await sv("idx",{list:idx});s.textContent="已匯入 "+n+" 個月份 ✓";sched(1000)}
+function rBa(){const c=!!DBX.st.rt,lb=cfg.lb||"從未備份";
+ $("#ba").innerHTML=`<div class="cd"><h2>Dropbox 同步</h2><p class="mu" id="dx">${c?"已連接。最後同步:"+esc(DBX.st.last||"尚未同步"):"尚未連接"}</p>
+ ${c?`<button class="btn" id="sy">立即同步</button> <button class="btn g" id="dc">中斷連接</button>`:`<label>Dropbox App Key</label><input id="ak" value="${esc(DBX.st.key||"")}" autocapitalize="off" autocorrect="off"><p class="mu">要在 Dropbox 應用的 Redirect URIs 加入這個網址:<br><code>${esc(DBX.redirect())}</code></p><button class="btn" id="cn">連接 Dropbox</button>`}</div>
+ <div class="cd"><h2>檔案備份</h2><p class="mu">上次檔案備份:${esc(lb)}</p><button class="btn" id="bx">備份成檔案</button> <span id="bk" class="mu"></span></div>
+ <div class="cd"><h2>匯入備份</h2><p class="mu">選擇備份檔案(.json)。同一天的資料會被覆蓋,檔案沒有的日子會保留。</p><input type="file" id="bf" accept=".json,application/json"><p class="mu" id="bs"></p></div>
+ ${dp?`<div class="cd"><h2>安裝</h2><button class="btn" id="ins">安裝到主畫面</button></div>`:""}`;
+ if(c){$("#sy").onclick=()=>sync();$("#dc").onclick=async()=>{DBX.st.rt=DBX.st.at=null;await DBX.save();msg("已中斷 Dropbox 連接(本機數據保留)");rBa()}}
+ else $("#cn").onclick=()=>{const k=$("#ak").value.trim();if(!k){$("#dx").textContent="請先輸入 App Key";return}DBX.connect(k)};
+ $("#bx").onclick=async()=>{try{await saveFile("life-ledger-backup-"+TODAY+".json",JSON.stringify(await all()));cfg.lb=TODAY;await scfg();$("#bk").textContent="已備份 ✓"}catch(e){$("#bk").textContent="備份失敗:"+(e&&e.message||e)}};
+ $("#bf").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("#bs").textContent="讀取檔案…";try{await imp(await f.text())}catch(err){$("#bs").textContent="讀取失敗:"+(err&&err.message||err)}};
+ if(dp)$("#ins").onclick=async()=>{dp.prompt();await dp.userChoice;dp=null;rBa()}}
+function tab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+ document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id===t));({in:rIn,hi:()=>rHi(),se:rSe,ba:rBa})[t]()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e});
+window.addEventListener("online",()=>sched(1000));
+(async()=>{try{await DBX.load();const q=new URLSearchParams(location.search);
+ if(q.get("code")){try{await DBX.finish(q.get("code"))}catch(e){msg("⚠ Dropbox 連接失敗:"+e.message)}history.replaceState(null,"",location.pathname)}
+ else if(q.get("error")){msg("Dropbox 連接已取消");history.replaceState(null,"",location.pathname)}
+ cfg=await ld("cfg")||JSON.parse(JSON.stringify(DEF));const i=await ld("idx");idx=i&&i.list||[];FQ=await ld("freq")||{};
+ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+ if(!$("#st").textContent.startsWith("⚠"))msg(DBX.st.rt?"已連接 Dropbox":"資料存在這部手機(尚未連接 Dropbox)");
+ await rIn();sched(0)}catch(e){msg("⚠ 啟動失敗:"+(e&&e.message||e))}})();
+</script>
+</body>
+</html>
