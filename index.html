@@ -51,50 +51,72 @@ const IDB=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=index
  return{get:k=>tx("readonly",s=>s.get(k)),set:(k,v)=>tx("readwrite",s=>s.put(v,k))}})();
 const DEF={cur:["HKD","JPY","CNY","TWD","KRW","USD"],pay:["現金","信用卡/銀行扣款","PayPay","樂天Pay(積分)","IC卡","匯豐扣賬卡"],
 items:[{id:"weight",n:"體重",t:"num",u:"kg",w:"t"},{id:"act",n:"行動指數(共同活動次數)",t:"int",u:"",w:"y"},{id:"cig",n:"吸煙枝數",t:"int",u:"枝",w:"y"},{id:"drk",n:"有否飲酒",t:"yn",u:"",w:"y"},{id:"stp",n:"步行步數",t:"int",u:"步",w:"y"},{id:"rnk",n:"全球步數排名",t:"int",u:"",w:"y"}]};
-const SEED=[["譚仔三哥米線",78,"JPY","信用卡/銀行扣款",null],["駐車場",63,"JPY","現金",null],["高速道路料金",57,"JPY","信用卡/銀行扣款",null],["肉のハナマサ",56,"JPY","信用卡/銀行扣款",null],["業務スーパー",47,"JPY","信用卡/銀行扣款",null],["Amazon",42,"JPY","信用卡/銀行扣款",null],["ひまわり青果",37,"JPY","PayPay",null],["オーケー",35,"JPY","信用卡/銀行扣款",null],["サミット",31,"JPY","信用卡/銀行扣款",null],["Daiso",28,"JPY","信用卡/銀行扣款",null],["ニキ先生",28,"JPY","PayPay",3000],["現金回贈",27,"JPY","匯豐扣賬卡",null],["Suicaカード",26,"JPY","信用卡/銀行扣款",null],["まいばすけっと",23,"JPY","信用卡/銀行扣款",null],["セフンーイレブン",21,"JPY","信用卡/銀行扣款",null],["Tata",19,"JPY","信用卡/銀行扣款",null],["コスモ",19,"JPY","信用卡/銀行扣款",null],["ドン・キホーテ",17,"JPY","信用卡/銀行扣款",null],["三代目茂蔵",16,"JPY","現金",null],["京和商店",13,"JPY","PayPay",null]];
-let cfg=null,M={},idx=[],FQ={},ed=YDAY,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null;
+const SEED=[["譚仔三哥米線",78,"JPY","信用卡/銀行扣款",null,"外食及飲品",""],["駐車場",63,"JPY","現金",null,"車用支出","駐車場"],["高速道路料金",57,"JPY","信用卡/銀行扣款",null,"車用支出","高速道路料金"],["肉のハナマサ",56,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["業務スーパー",47,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Amazon",42,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ひまわり青果",37,"JPY","PayPay",null,"食品雜貨",""],["オーケー",35,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["サミット",31,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Daiso",28,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ニキ先生",28,"JPY","PayPay",3000,"教育及學習",""],["現金回贈",27,"JPY","匯豐扣賬卡",null,"金融及稅務","現金回贈"],["Suicaカード",26,"JPY","信用卡/銀行扣款",null,"交通","Suicaカード"],["まいばすけっと",23,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["セフンーイレブン",21,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Tata",19,"JPY","信用卡/銀行扣款",null,"收入及退款","","r"],["コスモ",19,"JPY","信用卡/銀行扣款",null,"車用支出","ガソリン"],["ドン・キホーテ",17,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["三代目茂蔵",16,"JPY","現金",null,"外食及飲品",""],["京和商店",13,"JPY","PayPay",null,"食品雜貨",""]];
+const DEFCATS=[{n:"食品雜貨"},{n:"外食及飲品"},{n:"飲酒"},{n:"煙"},{n:"交通",s:["八達通","Suicaカード","Pasmoカード","タクシー","バス","その他"]},{n:"車用支出",s:["ガソリン","駐車場","高速道路料金","トンネル","その他"]},{n:"居住支出",s:["管理費","水道局","電気代","ガス代","差餉","家賃","住宅ローン","その他"]},{n:"通訊及網絡"},{n:"醫療保健"},{n:"保險"},{n:"教育及學習"},{n:"捐款"},{n:"娛樂及閱讀"},{n:"購物及日用品"},{n:"旅行",s:["航空券","ホテル","ビザ","両替","その他"]},{n:"家人及轉帳"},{n:"金融及稅務",s:["現金回贈","利息","その他"]},{n:"收入及退款"},{n:"個人護理"},{n:"家務及人工"}];
+const TT={"":"—",x:"公務(可報銷)",r:"公司退回"};
+let cfg=null,M={},idx=[],FQ={},ed=YDAY,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null,ei=null;
 const msg=t=>{$("#st").textContent=t};
 const ld=k=>IDB.get(k),sv=(k,o)=>IDB.set(k,o),mk=d=>"m"+d.slice(0,7);
 async function gm(d){const k=mk(d);if(!M[k])M[k]=await ld(k)||{days:{}};return M[k]}
 async function gd(d){const m=await gm(d);return m.days[d]||(m.days[d]={v:{},e:[]})}
 async function sm(d){const k=mk(d);M[k]._ts=Date.now();if(!idx.includes(k)){idx.push(k);await sv("idx",{list:idx})}await sv(k,M[k]);sched()}
 async function scfg(){cfg._ts=Date.now();await sv("cfg",cfg);sched()}
-function fav(){const m={};SEED.forEach(s=>m[s[0]]={n:s[1],c:s[2],p:s[3],a:s[4]});Object.entries(FQ).forEach(([k,v])=>m[k]=Object.assign({},m[k],v));return Object.entries(m).sort((a,b)=>b[1].n-a[1].n).slice(0,20)}
+function fav(){const m={};SEED.forEach(x=>m[x[0]]={n:x[1],c:x[2],p:x[3],a:x[4],g:x[5],s:x[6],tt:x[7]||""});Object.entries(FQ).forEach(([k,v])=>m[k]=Object.assign({},m[k],v));return Object.entries(m).sort((a,b)=>b[1].n-a[1].n).slice(0,20)}
 const chips=()=>fav().map(([k])=>`<button class="btn g" style="margin:3px 3px 0 0;padding:6px 10px;font-size:14px" data-ch="${esc(k)}">${esc(k)}</button>`).join("");
-function pick(k){const f=fav().find(x=>x[0]===k);if(!f)return;const v=f[1];$("#en").value=k;if(v.c&&cfg.cur.includes(v.c))$("#ec").value=v.c;if(v.p&&cfg.pay.includes(v.p))$("#ep").value=v.p;$("#ea").value=v.a!=null?v.a:"";$("#ea").focus()}
-function bump(n,a,c,p){const o=FQ[n]||{},b=(SEED.find(s=>s[0]===n)||[])[1]||0;FQ[n]={n:(o.n||b)+1,c,p,la:a,a:o.la===a?a:null}}
+const catOpts=sel=>`<option value="">—</option>`+cfg.cats.map(c=>`<option${c.n===sel?" selected":""}>${esc(c.n)}</option>`).join("");
+const subOpts=(cat,sel)=>{const c=cfg.cats.find(x=>x.n===cat);return c&&c.s&&c.s.length?`<option value="">—</option>`+c.s.map(x=>`<option${x===sel?" selected":""}>${esc(x)}</option>`).join(""):`<option value="">(無子分類)</option>`};
+function pick(k){const f=fav().find(x=>x[0]===k);if(!f)return;const v=f[1];$("#en").value=k;if(v.c&&cfg.cur.includes(v.c))$("#ec").value=v.c;if(v.p&&cfg.pay.includes(v.p))$("#ep").value=v.p;$("#ea").value=v.a!=null?v.a:"";
+ $("#eg").value=v.g||"";$("#es").innerHTML=subOpts(v.g||"",v.s||"");$("#etx").value=v.tt||"";$("#ea").focus()}
+function bump(n,a,c,p,g,s,tt){const o=FQ[n]||{},b=(SEED.find(x=>x[0]===n)||[])[1]||0;FQ[n]={n:(o.n||b)+1,c,p,g,s,tt:tt||"",la:a,a:o.la===a?a:null}}
 function tot(e){const o={};e.forEach(x=>{if(x.k!==false)o[x.c]=(o[x.c]||0)+x.a});return Object.entries(o).map(([c,a])=>c+" "+a.toLocaleString(undefined,{maximumFractionDigits:2})).join(" / ")||"—"}
 function fld(it,val){const id="f_"+it.id,v=val==null?"":val;
  if(it.t==="yn")return`<select id="${id}"><option value="">—</option><option value="Y"${v==="Y"?" selected":""}>有</option><option value="N"${v==="N"?" selected":""}>沒有</option></select>`;
  return`<input id="${id}" type="number" inputmode="${it.t==="int"?"numeric":"decimal"}" step="${it.t==="int"?1:0.1}" value="${esc(v)}">`}
+const ttSum=es=>{const o={};es.forEach(x=>{if(!x.tt)return;const m=o[x.c]||(o[x.c]={x:0,r:0});m[x.tt]+=Math.abs(x.a)});return o};
+const ttTxt=o=>{const k=Object.keys(o);return k.length?k.map(c=>`${c} 公務 ${o[c].x.toLocaleString(undefined,{maximumFractionDigits:2})} / 退回 ${o[c].r.toLocaleString(undefined,{maximumFractionDigits:2})} / 未退回 ${(o[c].x-o[c].r).toLocaleString(undefined,{maximumFractionDigits:2})}`).join("<br>"):"沒有記錄"};
 async function rIn(){
- const wd=addD(ed,1)>TODAY?TODAY:addD(ed,1),dY=await gd(ed),dT=await gd(wd),it=cfg.items.filter(i=>!i.off);
+ const wd=addD(ed,1)>TODAY?TODAY:addD(ed,1),dY=await gd(ed),dT=await gd(wd),it=cfg.items.filter(i=>!i.off),E=ei!=null&&dY.e[ei]?dY.e[ei]:null;
  const rows=it.map(i=>{const d=i.w==="t"?dT:dY;return`<label>${esc(i.n)}${i.u?"("+esc(i.u)+")":""} <span class="mu">${i.w==="t"?"記在 "+wd:ed}</span></label>${fld(i,d.v[i.id])}`}).join("");
- const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}${x.k===false?` <span class="mu">(不計入合計)</span>`:""}</span><span>${x.a.toLocaleString()} ${esc(x.c)} <button class="x" data-del="${n}">刪除</button></span></div>`).join("");
+ const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}<br><span class="mu">${esc([x.g,x.s].filter(Boolean).join(" › "))}${x.t?" #"+esc(x.t):""}${x.tt?" ・"+TT[x.tt]:""}${x.k===false?" ・不計入合計":""}</span></span><span style="text-align:right">${x.a.toLocaleString()} ${esc(x.c)}<br><button class="x" data-tt="${n}">${x.tt==="x"?"取消公務":"標記公務"}</button><button class="x" data-ex="${n}">編輯</button><button class="x" data-del="${n}">刪除</button></span></div>`).join("");
+ const ev=E||{},ecur=ev.c||lastCur,epay=ev.p!=null?ev.p:lastPay;
  $("#in").innerHTML=`<div class="cd"><h2>日期(預設昨天)</h2><input type="date" id="ed" value="${ed}" max="${TODAY}"></div>
  <div class="cd"><h2>每日項目</h2>${rows}<button class="btn" id="sdv">儲存每日項目</button></div>
- <div class="cd"><h2>支出</h2><div>${chips()}</div><label>項目</label><input id="en" placeholder="可自由輸入,或點上面的常用項目">
- <div class="r"><div><label>金額</label><input id="ea" type="number" inputmode="decimal" step="any"></div><div><label>幣種</label><select id="ec">${cfg.cur.map(c=>`<option${c===lastCur?" selected":""}>${esc(c)}</option>`).join("")}</select></div></div>
- <div class="r"><div><label>付款方式</label><select id="ep"><option value="">—</option>${cfg.pay.map(p=>`<option${p===lastPay?" selected":""}>${esc(p)}</option>`).join("")}</select></div><div><label>分類(可留空)</label><input id="eg"></div></div>
- <label><input type="checkbox" id="ek" checked style="width:auto"> 計入每日合計</label><button class="btn" id="aex">加入支出</button></div>
+ <div class="cd"><h2>${E?"編輯支出":"支出"}</h2>${E?"":`<div>${chips()}</div>`}<label>項目</label><input id="en" value="${esc(ev.n||"")}" placeholder="可自由輸入,或點上面的常用項目">
+ <div class="r"><div><label>金額</label><input id="ea" type="number" inputmode="decimal" step="any" value="${E?Math.abs(E.a):""}"></div><div><label>幣種</label><select id="ec">${cfg.cur.map(c=>`<option${c===ecur?" selected":""}>${esc(c)}</option>`).join("")}</select></div></div>
+ <div class="r"><div><label>付款方式</label><select id="ep"><option value="">—</option>${cfg.pay.map(p=>`<option${p===epay?" selected":""}>${esc(p)}</option>`).join("")}</select></div><div><label>分類</label><select id="eg">${catOpts(ev.g||"")}</select></div></div>
+ <div class="r"><div><label>子分類</label><select id="es">${subOpts(ev.g||"",ev.s||"")}</select></div><div><label>標籤(可留空)</label><input id="et" value="${esc(ev.t||"")}"></div></div>
+ <label>Tata(公司報銷)</label><select id="etx"><option value="">—</option><option value="x"${ev.tt==="x"?" selected":""}>公務支出(可報銷)</option><option value="r"${ev.tt==="r"?" selected":""}>公司退回(輸入正數)</option></select>
+ <label><input type="checkbox" id="ek" ${E&&E.k===false?"":"checked"} style="width:auto"> 計入每日合計</label><button class="btn" id="aex">${E?"更新支出":"加入支出"}</button>${E?` <button class="btn g" id="cex">取消編輯</button>`:""}</div>
  <div class="cd"><h2>${ed} 的支出</h2>${ex||'<span class="mu">還沒有記錄</span>'}<div class="it"><b>合計</b><b>${esc(tot(dY.e))}</b></div></div>`;
- $("#ed").onchange=e=>{ed=e.target.value||YDAY;rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
+ $("#ed").onchange=e=>{ed=e.target.value||YDAY;ei=null;rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
+ $("#eg").onchange=()=>{$("#es").innerHTML=subOpts($("#eg").value,"")};
  $("#sdv").onclick=async()=>{for(const i of it){const d=i.w==="t"?dT:dY,v=$("#f_"+i.id).value;
    if(v==="")delete d.v[i.id];else d.v[i.id]=i.t==="yn"?v:Number(v)}
    await sm(ed);await sm(wd);$("#sdv").textContent="已儲存 ✓";setTimeout(()=>$("#sdv")&&($("#sdv").textContent="儲存每日項目"),1500)};
- $("#aex").onclick=async()=>{const n=$("#en").value.trim(),a=parseFloat($("#ea").value);if(!n||isNaN(a))return;
-   lastCur=$("#ec").value;lastPay=$("#ep").value;const p=$("#ep").value,k=$("#ek").checked&&p!=="樂天Pay(積分)";
-   dY.e.push({n,a,c:lastCur,p,g:$("#eg").value.trim(),k});bump(n,a,lastCur,p);await sm(ed);await sv("freq",FQ);rIn()};
- document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{dY.e.splice(+b.dataset.del,1);await sm(ed);rIn()})}
-async function rHi(m){m=m||TODAY.slice(0,7);const mo=await gm(m+"-01"),ds=Object.keys(mo.days).sort().reverse();
- $("#hi").innerHTML=`<div class="cd"><h2>月份</h2><input type="month" id="hm" value="${m}"></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
+ $("#aex").onclick=async()=>{const n=$("#en").value.trim();let a=parseFloat($("#ea").value);if(!n||isNaN(a))return;
+   lastCur=$("#ec").value;lastPay=$("#ep").value;const p=lastPay,tt=$("#etx").value,g=$("#eg").value,s=$("#es").value,k=$("#ek").checked&&p!=="樂天Pay(積分)";
+   if(tt==="r")a=-Math.abs(a);const en={n,a,c:lastCur,p,g,s,t:$("#et").value.trim(),k};if(tt)en.tt=tt;
+   if(E){const o=dY.e[ei];if(o.z)en.z=o.z;if(o.tv!=null){en.tv=o.tv;en.tc=o.tc;en.r=o.r}dY.e[ei]=en;ei=null}else{dY.e.push(en);bump(n,a,lastCur,p,g,s,tt);await sv("freq",FQ)}
+   await sm(ed);rIn()};
+ if(E)$("#cex").onclick=()=>{ei=null;rIn()};
+ document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{dY.e.splice(+b.dataset.del,1);ei=null;await sm(ed);rIn()});
+ document.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{ei=+b.dataset.ex;rIn();window.scrollTo(0,$("#en").getBoundingClientRect().top+scrollY-120)});
+ document.querySelectorAll("[data-tt]").forEach(b=>b.onclick=async()=>{const x=dY.e[+b.dataset.tt];if(x.tt==="x")delete x.tt;else if(!x.tt)x.tt="x";await sm(ed);rIn()})}
+async function rHi(m){m=m||TODAY.slice(0,7);const mo=await gm(m+"-01"),ds=Object.keys(mo.days).sort().reverse(),all=ds.flatMap(d=>mo.days[d].e);
+ $("#hi").innerHTML=`<div class="cd"><h2>月份</h2><input type="month" id="hm" value="${m}"></div>
+ <div class="cd"><h2>Tata 報銷(本月)</h2><div class="mu" style="font-size:14px">${ttTxt(ttSum(all))}</div><button class="btn g" id="ty">查看全年報銷</button><div id="tyr"></div></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
  return`<div class="cd"><div class="it" style="border:0;padding:0"><b>${d}</b><span>${esc(tot(x.e))}</span></div><div class="mu">${x.e.length} 筆支出${v?" ・ "+esc(v):""}</div><button class="btn g" data-ed="${d}">編輯這一天</button></div>`}).join("")||'<div class="cd mu">這個月沒有記錄</div>');
- $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=b.dataset.ed;tab("in")})}
+ $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=b.dataset.ed;ei=null;tab("in")});
+ $("#ty").onclick=async()=>{const y=m.slice(0,4);let h=`<p class="mu">${y} 年</p>`;const yt=[];
+  for(let i=1;i<=12;i++){const mm=y+"-"+pad(i),mo2=await gm(mm+"-01"),es=Object.values(mo2.days).flatMap(d=>d.e);yt.push(...es);const t=ttSum(es);if(Object.keys(t).length)h+=`<div class="it"><b>${i} 月</b><span style="text-align:right">${ttTxt(t)}</span></div>`}
+  h+=`<div class="it"><b>全年</b><span style="text-align:right"><b>${ttTxt(ttSum(yt))}</b></span></div>`;$("#tyr").innerHTML=h}}
 function rSe(){const it=cfg.items.map((i,n)=>`<div class="it"><span>${esc(i.n)} <span class="mu">${i.t==="yn"?"是/否":i.t==="int"?"整數":"小數"}・${i.w==="t"?"記今天":"記昨天"}${i.off?"・已停用":""}</span></span><button class="x" data-tg="${n}">${i.off?"啟用":"停用"}</button></div>`).join("");
  $("#se").innerHTML=`<div class="cd"><h2>每日項目</h2>${it}<label>新增項目名稱</label><input id="nn"><div class="r"><div><label>類型</label><select id="nt"><option value="int">整數</option><option value="num">小數</option><option value="yn">是/否</option></select></div><div><label>單位</label><input id="nu"></div></div><label>記錄哪一天</label><select id="nw"><option value="y">昨天</option><option value="t">今天</option></select><button class="btn" id="ni">新增項目</button></div>
+ <div class="cd"><h2>分類(每行一個,冒號後是子分類,用逗號分隔)</h2><textarea id="ct">${esc(cfg.cats.map(c=>c.n+(c.s&&c.s.length?": "+c.s.join(","):"")).join("\n"))}</textarea><button class="btn" id="cs">儲存分類</button></div>
  <div class="cd"><h2>幣種(用逗號分隔)</h2><input id="cu" value="${esc(cfg.cur.join(","))}"><h2 style="margin-top:14px">付款方式(用逗號分隔)</h2><input id="pa" value="${esc(cfg.pay.join(","))}"><button class="btn" id="sc">儲存</button></div>`;
  document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=async()=>{const i=cfg.items[+b.dataset.tg];i.off=!i.off;await scfg();rSe()});
  $("#ni").onclick=async()=>{const n=$("#nn").value.trim();if(!n)return;cfg.items.push({id:"i"+Date.now(),n,t:$("#nt").value,u:$("#nu").value.trim(),w:$("#nw").value});await scfg();rSe()};
+ $("#cs").onclick=async()=>{cfg.cats=$("#ct").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.search(/[:：]/);return i<0?{n:l}:{n:l.slice(0,i).trim(),s:l.slice(i+1).split(/[,、，]/).map(x=>x.trim()).filter(Boolean)}});await scfg();$("#cs").textContent="已儲存 ✓"};
  $("#sc").onclick=async()=>{const f=s=>s.split(",").map(x=>x.trim()).filter(Boolean);cfg.cur=f($("#cu").value);cfg.pay=f($("#pa").value);await scfg();$("#sc").textContent="已儲存 ✓"}}
 /* ---------- Dropbox (OAuth PKCE, App Folder) ---------- */
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
@@ -137,7 +159,7 @@ function rBa(){const c=!!DBX.st.rt,lb=cfg.lb||"從未備份";
  ${c?`<button class="btn" id="sy">立即同步</button> <button class="btn g" id="dc">中斷連接</button>`:`<label>Dropbox App Key</label><input id="ak" value="${esc(DBX.st.key||"")}" autocapitalize="off" autocorrect="off"><p class="mu">要在 Dropbox 應用的 Redirect URIs 加入這個網址:<br><code>${esc(DBX.redirect())}</code></p><button class="btn" id="cn">連接 Dropbox</button>`}</div>
  <div class="cd"><h2>檔案備份</h2><p class="mu">上次檔案備份:${esc(lb)}</p><button class="btn" id="bx">備份成檔案</button> <span id="bk" class="mu"></span></div>
  <div class="cd"><h2>匯入備份</h2><p class="mu">選擇備份檔案(.json)。同一天的資料會被覆蓋,檔案沒有的日子會保留。</p><input type="file" id="bf" accept=".json,application/json"><p class="mu" id="bs"></p></div>
- ${dp?`<div class="cd"><h2>安裝</h2><button class="btn" id="ins">安裝到主畫面</button></div>`:""}`;
+ ${matchMedia("(display-mode: standalone)").matches?"":`<div class="cd"><h2>安裝到主畫面</h2>${dp?`<button class="btn" id="ins">安裝</button>`:""}<p class="mu">如果沒有出現安裝畫面:Chrome 右上角選單 →「安裝並建立捷徑」。</p></div>`}`;
  if(c){$("#sy").onclick=()=>sync();$("#dc").onclick=async()=>{DBX.st.rt=DBX.st.at=null;await DBX.save();msg("已中斷 Dropbox 連接(本機數據保留)");rBa()}}
  else $("#cn").onclick=()=>{const k=$("#ak").value.trim();if(!k){$("#dx").textContent="請先輸入 App Key";return}DBX.connect(k)};
  $("#bx").onclick=async()=>{try{await saveFile("life-ledger-backup-"+TODAY+".json",JSON.stringify(await all()));cfg.lb=TODAY;await scfg();$("#bk").textContent="已備份 ✓"}catch(e){$("#bk").textContent="備份失敗:"+(e&&e.message||e)}};
@@ -151,7 +173,7 @@ window.addEventListener("online",()=>sched(1000));
 (async()=>{try{await DBX.load();const q=new URLSearchParams(location.search);
  if(q.get("code")){try{await DBX.finish(q.get("code"))}catch(e){msg("⚠ Dropbox 連接失敗:"+e.message)}history.replaceState(null,"",location.pathname)}
  else if(q.get("error")){msg("Dropbox 連接已取消");history.replaceState(null,"",location.pathname)}
- cfg=await ld("cfg")||JSON.parse(JSON.stringify(DEF));const i=await ld("idx");idx=i&&i.list||[];FQ=await ld("freq")||{};
+ cfg=await ld("cfg")||JSON.parse(JSON.stringify(DEF));if(!cfg.cats)cfg.cats=JSON.parse(JSON.stringify(DEFCATS));const i=await ld("idx");idx=i&&i.list||[];FQ=await ld("freq")||{};
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
  if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
  if(!$("#st").textContent.startsWith("⚠"))msg(DBX.st.rt?"已連接 Dropbox":"資料存在這部手機(尚未連接 Dropbox)");
