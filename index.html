@@ -54,6 +54,10 @@ items:[{id:"weight",n:"體重",t:"num",u:"kg",w:"t"},{id:"act",n:"行動指數(�
 const SEED=[["譚仔三哥米線",78,"JPY","信用卡/銀行扣款",null,"外食及飲品",""],["駐車場",63,"JPY","現金",null,"車用支出","駐車場"],["高速道路料金",57,"JPY","信用卡/銀行扣款",null,"車用支出","高速道路料金"],["肉のハナマサ",56,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["業務スーパー",47,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Amazon",42,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ひまわり青果",37,"JPY","PayPay",null,"食品雜貨",""],["オーケー",35,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["サミット",31,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Daiso",28,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ニキ先生",28,"JPY","PayPay",3000,"教育及學習",""],["現金回贈",27,"JPY","匯豐扣賬卡",null,"金融及稅務","現金回贈"],["Suicaカード",26,"JPY","信用卡/銀行扣款",null,"交通","Suicaカード"],["まいばすけっと",23,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["セフンーイレブン",21,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Tata",19,"JPY","信用卡/銀行扣款",null,"收入及退款","","r"],["コスモ",19,"JPY","信用卡/銀行扣款",null,"車用支出","ガソリン"],["ドン・キホーテ",17,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["三代目茂蔵",16,"JPY","現金",null,"外食及飲品",""],["京和商店",13,"JPY","PayPay",null,"食品雜貨",""]];
 const DEFCATS=[{n:"食品雜貨"},{n:"外食及飲品"},{n:"飲酒"},{n:"煙"},{n:"交通",s:["八達通","Suicaカード","Pasmoカード","タクシー","バス","その他"]},{n:"車用支出",s:["ガソリン","駐車場","高速道路料金","トンネル","その他"]},{n:"居住支出",s:["管理費","水道局","電気代","ガス代","差餉","家賃","住宅ローン","その他"]},{n:"通訊及網絡"},{n:"醫療保健"},{n:"保險"},{n:"教育及學習"},{n:"捐款"},{n:"娛樂及閱讀"},{n:"購物及日用品"},{n:"旅行",s:["航空券","ホテル","ビザ","両替","その他"]},{n:"家人及轉帳"},{n:"金融及稅務",s:["現金回贈","利息","その他"]},{n:"收入及退款"},{n:"個人護理"},{n:"家務及人工"}];
 const TT={"":"—",x:"公務(可報銷)",r:"公司退回"};
+const calc=(t,T)=>{t=String(t||"").trim().replace(/[Tt總]/g,"("+T+")");if(!t)return 0;if(!/^[0-9+\-*/().\s]+$/.test(t))return NaN;try{const v=Function('"use strict";return ('+t+')')();return isFinite(v)?Math.round(v*100)/100:NaN}catch(e){return NaN}};
+const parts=e=>{const o=[],sp=e.sp||{};let m=e.a;for(const k in sp)if(sp[k]>0){o.push({g:k,a:sp[k]});m-=sp[k]}o.push({g:e.g||"",a:m});return o};
+const gSum=(es,g)=>{const o={};es.forEach(e=>{if(e.k===false||e.a<=0)return;parts(e).forEach(p=>{if(p.g===g)o[e.c]=(o[e.c]||0)+p.a})});return o};
+const gTxt=o=>{const k=Object.keys(o);return k.length?k.map(c=>c+" "+o[c].toLocaleString(undefined,{maximumFractionDigits:2})).join(" / "):"—"};
 let cfg=null,M={},idx=[],FQ={},ed=YDAY,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null,ei=null;
 const msg=t=>{$("#st").textContent=t};
 const ld=k=>IDB.get(k),sv=(k,o)=>IDB.set(k,o),mk=d=>"m"+d.slice(0,7);
@@ -77,7 +81,7 @@ const ttTxt=o=>{const k=Object.keys(o);return k.length?k.map(c=>`${c} 公務 ${o
 async function rIn(){
  const wd=addD(ed,1)>TODAY?TODAY:addD(ed,1),dY=await gd(ed),dT=await gd(wd),it=cfg.items.filter(i=>!i.off),E=ei!=null&&dY.e[ei]?dY.e[ei]:null;
  const rows=it.map(i=>{const d=i.w==="t"?dT:dY;return`<label>${esc(i.n)}${i.u?"("+esc(i.u)+")":""} <span class="mu">${i.w==="t"?"記在 "+wd:ed}</span></label>${fld(i,d.v[i.id])}`}).join("");
- const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}<br><span class="mu">${esc([x.g,x.s].filter(Boolean).join(" › "))}${x.t?" #"+esc(x.t):""}${x.tt?" ・"+TT[x.tt]:""}${x.k===false?" ・不計入合計":""}</span></span><span style="text-align:right">${x.a.toLocaleString()} ${esc(x.c)}<br><button class="x" data-tt="${n}">${x.tt==="x"?"取消公務":"標記公務"}</button><button class="x" data-ex="${n}">編輯</button><button class="x" data-del="${n}">刪除</button></span></div>`).join("");
+ const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}<br><span class="mu">${esc([x.g,x.s].filter(Boolean).join(" › "))}${x.t?" #"+esc(x.t):""}${x.tt?" ・"+TT[x.tt]:""}${x.sp?" ・其中 "+Object.entries(x.sp).map(([k,v])=>k+" "+v.toLocaleString()).join("、"):""}${x.k===false?" ・不計入合計":""}</span></span><span style="text-align:right">${x.a.toLocaleString()} ${esc(x.c)}<br><button class="x" data-tt="${n}">${x.tt==="x"?"取消公務":"標記公務"}</button><button class="x" data-ex="${n}">編輯</button><button class="x" data-del="${n}">刪除</button></span></div>`).join("");
  const ev=E||{},ecur=ev.c||lastCur,epay=ev.p!=null?ev.p:lastPay;
  $("#in").innerHTML=`<div class="cd"><h2>日期(預設昨天)</h2><input type="date" id="ed" value="${ed}" max="${TODAY}"></div>
  <div class="cd"><h2>每日項目</h2>${rows}<button class="btn" id="sdv">儲存每日項目</button></div>
@@ -86,6 +90,7 @@ async function rIn(){
  <div class="r"><div><label>付款方式</label><select id="ep"><option value="">—</option>${cfg.pay.map(p=>`<option${p===epay?" selected":""}>${esc(p)}</option>`).join("")}</select></div><div><label>分類</label><select id="eg">${catOpts(ev.g||"")}</select></div></div>
  <div class="r"><div><label>子分類</label><select id="es">${subOpts(ev.g||"",ev.s||"")}</select></div><div><label>標籤(可留空)</label><input id="et" value="${esc(ev.t||"")}"></div></div>
  <label>Tata(公司報銷)</label><select id="etx"><option value="">—</option><option value="x"${ev.tt==="x"?" selected":""}>公務支出(可報銷)</option><option value="r"${ev.tt==="r"?" selected":""}>公司退回(輸入正數)</option></select>
+ <div class="r"><div><label>其中飲酒金額(可輸入算式,T=總額)</label><input id="ew" value="${E&&E.sp&&E.sp["飲酒"]?E.sp["飲酒"]:""}" placeholder="例如 T-1344-107"></div><div><label>其中煙金額</label><input id="esk" value="${E&&E.sp&&E.sp["煙"]?E.sp["煙"]:""}" placeholder="例如 580"></div></div>
  <label><input type="checkbox" id="ek" ${E&&E.k===false?"":"checked"} style="width:auto"> 計入每日合計</label><button class="btn" id="aex">${E?"更新支出":"加入支出"}</button>${E?` <button class="btn g" id="cex">取消編輯</button>`:""}</div>
  <div class="cd"><h2>${ed} 的支出</h2>${ex||'<span class="mu">還沒有記錄</span>'}<div class="it"><b>合計</b><b>${esc(tot(dY.e))}</b></div></div>`;
  $("#ed").onchange=e=>{ed=e.target.value||YDAY;ei=null;rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
@@ -96,6 +101,10 @@ async function rIn(){
  $("#aex").onclick=async()=>{const n=$("#en").value.trim();let a=parseFloat($("#ea").value);if(!n||isNaN(a))return;
    lastCur=$("#ec").value;lastPay=$("#ep").value;const p=lastPay,tt=$("#etx").value,g=$("#eg").value,s=$("#es").value,k=$("#ek").checked&&p!=="樂天Pay(積分)";
    if(tt==="r")a=-Math.abs(a);const en={n,a,c:lastCur,p,g,s,t:$("#et").value.trim(),k};if(tt)en.tt=tt;
+   if(a>0){const w=calc($("#ew").value,a),sk=calc($("#esk").value,a);
+    if(isNaN(w)||isNaN(sk)||w<0||sk<0){msg("⚠ 酒類或煙的金額算式不正確");return}
+    if(w+sk>a+0.005){msg("⚠ 酒類加煙的金額不能大於總額");return}
+    if(w>0||sk>0){en.sp={};if(w>0)en.sp["飲酒"]=w;if(sk>0)en.sp["煙"]=sk}}
    if(E){const o=dY.e[ei];if(o.z)en.z=o.z;if(o.tv!=null){en.tv=o.tv;en.tc=o.tc;en.r=o.r}dY.e[ei]=en;ei=null}else{dY.e.push(en);bump(n,a,lastCur,p,g,s,tt);await sv("freq",FQ)}
    await sm(ed);rIn()};
  if(E)$("#cex").onclick=()=>{ei=null;rIn()};
@@ -104,7 +113,7 @@ async function rIn(){
  document.querySelectorAll("[data-tt]").forEach(b=>b.onclick=async()=>{const x=dY.e[+b.dataset.tt];if(x.tt==="x")delete x.tt;else if(!x.tt)x.tt="x";await sm(ed);rIn()})}
 async function rHi(m){m=m||TODAY.slice(0,7);const mo=await gm(m+"-01"),ds=Object.keys(mo.days).sort().reverse(),all=ds.flatMap(d=>mo.days[d].e);
  $("#hi").innerHTML=`<div class="cd"><h2>月份</h2><input type="month" id="hm" value="${m}"></div>
- <div class="cd"><h2>Tata 報銷(本月)</h2><div class="mu" style="font-size:14px">${ttTxt(ttSum(all))}</div><button class="btn g" id="ty">查看全年報銷</button><div id="tyr"></div></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
+ <div class="cd"><h2>Tata 報銷(本月)</h2><div class="mu" style="font-size:14px">${ttTxt(ttSum(all))}</div><button class="btn g" id="ty">查看全年報銷</button><div id="tyr"></div></div>`+`<div class="cd"><h2>本月飲酒及煙(包括單內拆分)</h2><div class="mu" style="font-size:14px">飲酒:${gTxt(gSum(all,"飲酒"))}<br>煙:${gTxt(gSum(all,"煙"))}</div></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
  return`<div class="cd"><div class="it" style="border:0;padding:0"><b>${d}</b><span>${esc(tot(x.e))}</span></div><div class="mu">${x.e.length} 筆支出${v?" ・ "+esc(v):""}</div><button class="btn g" data-ed="${d}">編輯這一天</button></div>`}).join("")||'<div class="cd mu">這個月沒有記錄</div>');
  $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=b.dataset.ed;ei=null;tab("in")});
  $("#ty").onclick=async()=>{const y=m.slice(0,4);let h=`<p class="mu">${y} 年</p>`;const yt=[];
