@@ -29,15 +29,18 @@ input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-r
 .mu{color:var(--mu);font-size:13px}.sec{display:none}.sec.on{display:block}
 textarea{min-height:120px;font:12px/1.4 ui-monospace,monospace}
 code{font-size:12px;word-break:break-all}
+.ax{fill:var(--mu);font-size:11px}.gl{stroke:var(--bd)}.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin-top:4px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}table.rk{width:100%;border-collapse:collapse;font-size:13px}table.rk td{padding:4px 2px;border-top:1px solid var(--bd)}table.rk td:nth-child(n+3){text-align:right}
+nav button{font-size:14px}
 </style>
 </head>
 <body>
 <header><h1>生活記錄</h1><span id="st">載入中…</span></header>
-<nav><button data-t="in" class="on">輸入</button><button data-t="hi">歷史</button><button data-t="se">設定</button><button data-t="ba">備份同步</button></nav>
+<nav><button data-t="in" class="on">輸入</button><button data-t="hi">歷史</button><button data-t="se">設定</button><button data-t="ch">圖表</button><button data-t="ba">備份同步</button></nav>
 <main>
 <section id="in" class="sec on"></section>
 <section id="hi" class="sec"></section>
 <section id="se" class="sec"></section>
+<section id="ch" class="sec"></section>
 <section id="ba" class="sec"></section>
 </main>
 <script>
@@ -127,6 +130,84 @@ function rSe(){const it=cfg.items.map((i,n)=>`<div class="it"><span>${esc(i.n)} 
  $("#ni").onclick=async()=>{const n=$("#nn").value.trim();if(!n)return;cfg.items.push({id:"i"+Date.now(),n,t:$("#nt").value,u:$("#nu").value.trim(),w:$("#nw").value});await scfg();rSe()};
  $("#cs").onclick=async()=>{cfg.cats=$("#ct").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.search(/[:：]/);return i<0?{n:l}:{n:l.slice(0,i).trim(),s:l.slice(i+1).split(/[,、，]/).map(x=>x.trim()).filter(Boolean)}});await scfg();$("#cs").textContent="已儲存 ✓"};
  $("#sc").onclick=async()=>{const f=s=>s.split(",").map(x=>x.trim()).filter(Boolean);cfg.cur=f($("#cu").value);cfg.pay=f($("#pa").value);await scfg();$("#sc").textContent="已儲存 ✓"}}
+/* ---------- charts (same set as the 2026 Excel) ---------- */
+const PAL=["#2f7fd1","#e8802a","#7a8b99","#e6b422","#3aa17e","#9b59b6","#d9534f","#8c6d46"];
+let chY=null,chM=null,chC=null;
+const DIM=(y,m)=>new Date(y,m,0).getDate(),jv=(e,c)=>e.c===c?e.a:(e.tc===c&&e.tv!=null?e.tv:null),cigDay=v=>v.cig>0||v.smk==="Y";
+const nm0=n=>String(n||"").replace(/\s+/g," ").trim().replace(/\s*[\(（]八達通[\)）]\s*$/,"");
+async function yearDocs(y){const o=[];for(let m=1;m<=12;m++)o.push(await gm(y+"-"+pad(m)+"-01"));return o}
+function model(y,ms,c){
+ const R={months:[],items:{},itemM:{},yr:{O:[],P:[],Q:[],S:[],SA:[],last:0}};let doy=0,cs=0,cn=0,Y=0,A=0,K=0;
+ for(let m=1;m<=12;m++){const mo=ms[m-1],n=DIM(y,m),M={m,n,B:0,C:0,inc:0,F:0,G:0,H:0,steps:0,drink:0,gas:0,park:0,toll:0,med:0,u1:0,u2:0,u3:0,iij:0,last:0,Q:[],P:[],R:[],I:[],J:[],K:[],W:[],S:[],SA:[],RK:[]};
+  let cum=0,f=0,g=0,h=0;
+  for(let d=1;d<=n;d++){doy++;const ds=y+"-"+pad(m)+"-"+pad(d),x=mo.days[ds],v=x?x.v:{},es=x?x.e:[],has=!!x&&(es.length>0||Object.keys(v).length>0);
+   let q=0;
+   for(const e of es){const val=jv(e,c);if(val==null)continue;const cnt=e.k!==false;
+    if(cnt){if(e.z)M.C+=val;else{M.B+=val;q+=val}}
+    const k=nm0(e.n);if(cnt&&!e.z&&e.c===c){R.items[k]=(R.items[k]||0)+val;(R.itemM[k]||(R.itemM[k]=Array(12).fill(0)))[m-1]+=val}
+    if(e.a>0){const ra=val/e.a,sp=e.sp||{};let main=val;for(const kk in sp){const pv=sp[kk]*ra;main-=pv;if(kk==="飲酒")M.drink+=pv}
+     if(e.g==="飲酒")M.drink+=main;if(e.g==="車用支出"){if(e.s==="ガソリン")M.gas+=main;if(e.s==="駐車場")M.park+=main;if(e.s==="高速道路料金")M.toll+=main}if(e.g==="醫療保健")M.med+=main}
+    if(e.g==="居住支出"){if(e.s==="ガス代")M.u1+=val;if(e.s==="電気代")M.u2+=val;if(e.s==="水道局")M.u3+=val}
+    if(/^IIJ/i.test(k))M.iij+=val}
+   if(has)M.last=d;
+   cum+=q;if(v.drk==="Y"){f++;Y++}if(typeof v.act==="number"){g+=v.act;if(v.act>0)A++}if(cigDay(v)){h++;K++}
+   if(typeof v.stp==="number"){M.steps+=v.stp;cs+=v.stp;cn++}
+   if(has){M.Q.push(q);M.P.push(cum/d);M.R.push(cum/d*n);M.I.push(f/d);M.J.push(g/d);M.K.push(h/d);M.W.push(typeof v.weight==="number"?v.weight:null);M.S.push(typeof v.stp==="number"?v.stp:null);M.SA.push(cn?cs/cn:null);M.RK.push(typeof v.rnk==="number"?v.rnk:null);
+    R.yr.O.push(Y/doy);R.yr.P.push(A/doy);R.yr.Q.push(K/doy);R.yr.S.push(typeof v.stp==="number"?v.stp:null);R.yr.SA.push(cn?cs/cn:null);R.yr.last=doy}}
+  M.F=f;M.G=g;M.H=h;const inc=(mo.inc||[]).filter(i=>i.c===c);M.inc=inc.reduce((a,i)=>a+i.a,0);M.D=M.B+M.C;R.months.push(M)}
+ let bal=0;R.months.forEach(M=>{M.E=M.inc-M.D;bal+=M.E;M.bal=bal});return R}
+const card=(t,h)=>`<div class="cd"><h2>${t}</h2>${h}</div>`;
+const leg=s=>`<div class="lg">${s.map((x,k)=>`<span><i style="background:${PAL[k%8]}"></i>${esc(x.n)}</span>`).join("")}</div>`;
+const nf=n=>n==null?"":Math.abs(n)>=1e5?(Math.round(n/1000)).toLocaleString()+"k":Math.round(n).toLocaleString();
+function nice(lo,hi,n=5){if(lo===hi)hi=lo+1;const r=hi-lo,st=Math.pow(10,Math.floor(Math.log10(r/n))),f=r/n/st,k=f<1.5?1:f<3?2:f<7?5:10,s=k*st,a=Math.floor(lo/s+1e-9)*s,b=Math.ceil(hi/s-1e-9)*s,t=[];for(let v=a;v<=b+s/2;v+=s)t.push(Math.round(v/s)*s);return{a,b,t}}
+function frame(labels,ser,o){let lo=Infinity,hi=-Infinity;ser.forEach(s=>s.v.forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));if(lo===Infinity)return null;
+ if(o.zero!==false&&lo>0)lo=0;if(o.zero!==false&&hi<0)hi=0;const W=640,H=270,L=o.pct?44:58,R=12,T=12,B=28,sc=nice(lo,hi),y=v=>T+(H-T-B)*(1-(v-sc.a)/(sc.b-sc.a)),fm=o.pct?v=>Math.round(v*100)+"%":nf,n=labels.length;
+ let g=sc.t.map(t=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${L-6}" y="${y(t)+4}" text-anchor="end">${fm(t)}</text>`).join("");return{W,H,L,R,T,B,y,g,n,sc}}
+function sLine(t,labels,ser,o={}){ser=ser.filter(s=>s.v.some(v=>v!=null));const F=frame(labels,ser,o);if(!F)return card(t,'<span class="mu">沒有數據</span>');const{W,H,L,R,y,n}=F,x=i=>L+(n>1?(W-L-R)*i/(n-1):(W-L-R)/2),st=Math.ceil(n/12);
+ let g=F.g+labels.map((l,i)=>i%st?"":`<text class="ax" x="${x(i)}" y="${H-8}" text-anchor="middle">${l}</text>`).join("");
+ g+=ser.map((s,k)=>{let d="",pen=false;s.v.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+  return`<path d="${d}" fill="none" stroke="${PAL[k%8]}" stroke-width="2" stroke-linejoin="round"/>`+(n<=40?s.v.map((v,i)=>v==null?"":`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${PAL[k%8]}"/>`).join(""):"")}).join("");
+ return card(t,`<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>${leg(ser)}${o.note?`<p class="mu">${o.note}</p>`:""}`)}
+function sBar(t,labels,ser,o={}){ser=ser.filter(s=>s.v.some(v=>v!=null&&v!==0));const F=frame(labels,ser,o);if(!F)return card(t,'<span class="mu">沒有數據</span>');const{W,H,L,R,y,n,sc}=F,gw=(W-L-R)/n,bw=gw*.78/ser.length,y0=y(0);
+ let g=F.g+labels.map((l,i)=>`<text class="ax" x="${L+gw*(i+.5)}" y="${H-8}" text-anchor="middle">${l}</text>`).join("");
+ g+=ser.map((s,k)=>s.v.map((v,i)=>v==null||v===0?"":`<rect x="${(L+gw*i+gw*.11+bw*k).toFixed(1)}" y="${Math.min(y(v),y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y(v)-y0).toFixed(1)}" fill="${PAL[k%8]}"/>`).join("")).join("");
+ return card(t,`<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>${leg(ser)}${o.note?`<p class="mu">${o.note}</p>`:""}`)}
+function sPie(t,items){const tot=items.reduce((a,b)=>a+b.v,0);if(!(tot>0))return card(t,'<span class="mu">沒有數據</span>');let a0=-Math.PI/2,p="";
+ items.forEach((it,k)=>{const a1=a0+it.v/tot*2*Math.PI,r=90,cx=110,cy=100,big=a1-a0>Math.PI?1:0;p+=`<path d="M${cx} ${cy}L${(cx+r*Math.cos(a0)).toFixed(1)} ${(cy+r*Math.sin(a0)).toFixed(1)}A${r} ${r} 0 ${big} 1 ${(cx+r*Math.cos(a1)).toFixed(1)} ${(cy+r*Math.sin(a1)).toFixed(1)}Z" fill="${PAL[k%8]}"/>`;a0=a1});
+ return card(t,`<svg viewBox="0 0 220 200" width="55%" style="max-width:240px">${p}</svg><div class="lg" style="flex-direction:column">${items.map((it,k)=>`<span><i style="background:${PAL[k%8]}"></i>${esc(it.n)} ${Math.round(it.v).toLocaleString()}(${Math.round(it.v/tot*100)}%)</span>`).join("")}</div>`)}
+const MN=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+async function rCh(){
+ const ys=[...new Set(idx.map(k=>k.slice(1,5)))].sort();if(!ys.length){$("#ch").innerHTML='<div class="cd mu">還沒有數據</div>';return}
+ if(!chY||!ys.includes(chY))chY=ys[ys.length-1];const y=+chY,ms=await yearDocs(y);
+ if(!chC){const tt={};ms.forEach(mo=>Object.values(mo.days).forEach(x=>x.e.forEach(e=>{if(e.k!==false)tt[e.c]=(tt[e.c]||0)+1})));chC=Object.keys(tt).sort((a,b)=>tt[b]-tt[a])[0]||"JPY"}
+ const R=model(y,ms,chC),lm=Math.max(1,...R.months.filter(M=>M.last>0).map(M=>M.m));if(!chM||chM<1||chM>12)chM=lm;const M=R.months[chM-1],labs=Array.from({length:M.last},(_,i)=>i+1);
+ const curs=[...new Set([chC,...cfg.cur])];
+ let h=`<div class="cd"><div class="r"><div><label>年份</label><select id="cy">${ys.map(v=>`<option${v===chY?" selected":""}>${v}</option>`).join("")}</select></div><div><label>月份(本月圖表)</label><select id="cm">${MN.map((v,i)=>`<option value="${i+1}"${i+1===chM?" selected":""}>${v}</option>`).join("")}</select></div></div><label>幣種(圖表只計算這個幣種;有換算值的外幣記錄按換算值計入)</label><select id="cc">${curs.map(v=>`<option${v===chC?" selected":""}>${esc(v)}</option>`).join("")}</select></div>`;
+ h+=`<h2 style="margin:6px 4px">${y} 年 ${MN[chM-1]}</h2>`;
+ const tdAvg=M.P.length?M.P[M.P.length-1]:null;
+ h+=sLine("每日消費 ("+MN[chM-1]+")",labs,[{n:"每日平均",v:M.P},{n:"每日消費",v:M.Q}],{note:tdAvg!=null?"至第 "+M.last+" 天的每日平均:"+chC+" "+Math.round(tdAvg).toLocaleString():""});
+ h+=sLine("每月預測",labs,[{n:"每月預測",v:M.R}],{note:M.R.length?"預測本月總額:"+chC+" "+Math.round(M.R[M.R.length-1]).toLocaleString():""});
+ h+=sLine("生活指數 ("+MN[chM-1]+")",labs,[{n:"飲酒比率",v:M.I},{n:"行動比率",v:M.J},{n:"吸煙比率",v:M.K}],{pct:true});
+ h+=sLine("體重 ("+MN[chM-1]+")",labs,[{n:"體重",v:M.W}],{zero:false});
+ h+=sLine("步數 ("+MN[chM-1]+")",labs,[{n:"每日步數",v:M.S},{n:"全年平均",v:M.SA}]);
+ h+=sLine("步數排名 ("+MN[chM-1]+",數字愈小愈好)",labs,[{n:"排名",v:M.RK}],{zero:false});
+ h+=`<h2 style="margin:14px 4px 6px">${y} 年 全年</h2>`;
+ const mo12=R.months,last=Math.max(...mo12.map(x=>x.last?x.m:0));
+ h+=sBar("每年支出總結",MN,[{n:"每月消費",v:mo12.map(x=>x.B)},{n:"每月必然支出",v:mo12.map(x=>x.C)},{n:"每月總支出",v:mo12.map(x=>x.D)},{n:"每月收入",v:mo12.map(x=>x.inc)},{n:"每月總結",v:mo12.map(x=>x.E)}]);
+ h+=sLine("月尾結存",MN,[{n:"月尾結存",v:mo12.map(x=>x.m<=last?x.bal:null)}],{zero:false});
+ h+=sLine("月費",MN,[{n:"ガス代",v:mo12.map(x=>x.u1)},{n:"電気代",v:mo12.map(x=>x.u2)},{n:"水道局",v:mo12.map(x=>x.u3)},{n:"IIJ",v:mo12.map(x=>x.iij)}]);
+ h+=sBar("每月生活消費",MN,[{n:"飲酒",v:mo12.map(x=>x.drink)},{n:"ガソリン",v:mo12.map(x=>x.gas)},{n:"駐車場",v:mo12.map(x=>x.park)},{n:"高速道路料金",v:mo12.map(x=>x.toll)},{n:"醫療保健",v:mo12.map(x=>x.med)}]);
+ const rk=Object.entries(R.items).sort((a,b)=>b[1]-a[1]),tp=rk.filter(x=>x[1]>0).reduce((a,x)=>a+x[1],0),top5=rk.slice(0,5);
+ h+=sBar("項目排行前五名(每月)",MN,top5.map(([k])=>({n:k,v:R.itemM[k]})));
+ h+=sPie("項目排行前五名(佔比)",top5.map(([k,v])=>({n:k,v})));
+ let c2=0;h+=card("項目排行(全年前 15;不含必然支出和外幣換算項目)",`<table class="rk">${rk.slice(0,15).map(([k,v],i)=>{c2+=v;return`<tr><td>${i+1}</td><td>${esc(k)}</td><td>${Math.round(v).toLocaleString()}</td><td>${tp?Math.round(v/tp*1000)/10:0}%</td><td>${tp?Math.round(c2/tp*1000)/10:0}%</td></tr>`}).join("")}</table><p class="mu">百分比以全年正數項目合計為基數;可能與 Excel 的基數略有不同。</p>`);
+ h+=sLine("每月指數(每月飲酒日數、行動次數、吸煙日數)",MN,[{n:"飲酒月結",v:mo12.map(x=>x.m<=last?x.F:null)},{n:"行動月結",v:mo12.map(x=>x.m<=last?x.G:null)},{n:"吸煙月結",v:mo12.map(x=>x.m<=last?x.H:null)}]);
+ const dl=R.yr.last,dlab=Array.from({length:dl},(_,i)=>i+1);
+ h+=sLine("每日累積百分比",dlab,[{n:"飲酒總比率",v:R.yr.O},{n:"行動總比率",v:R.yr.P},{n:"吸煙總比率",v:R.yr.Q}],{pct:true});
+ h+=sBar("月結總步數",MN,[{n:"月結總步數",v:mo12.map(x=>x.steps)}]);
+ h+=sLine("全年每日步數及平均",dlab,[{n:"每日步數",v:R.yr.S},{n:"平均",v:R.yr.SA}]);
+ $("#ch").innerHTML=h;
+ $("#cy").onchange=e=>{chY=e.target.value;chM=null;chC=null;rCh()};$("#cm").onchange=e=>{chM=+e.target.value;rCh()};$("#cc").onchange=e=>{chC=e.target.value;rCh()}}
 /* ---------- Dropbox (OAuth PKCE, App Folder) ---------- */
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const DBX={st:{},redirect:()=>location.origin+location.pathname,
@@ -175,7 +256,7 @@ function rBa(){const c=!!DBX.st.rt,lb=cfg.lb||"從未備份";
  $("#bf").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("#bs").textContent="讀取檔案…";try{await imp(await f.text())}catch(err){$("#bs").textContent="讀取失敗:"+(err&&err.message||err)}};
  if(dp)$("#ins").onclick=async()=>{dp.prompt();await dp.userChoice;dp=null;rBa()}}
 function tab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
- document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id===t));({in:rIn,hi:()=>rHi(),se:rSe,ba:rBa})[t]()}
+ document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id===t));({in:rIn,hi:()=>rHi(),se:rSe,ch:()=>rCh(),ba:rBa})[t]()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e});
 window.addEventListener("online",()=>sched(1000));
