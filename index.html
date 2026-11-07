@@ -14,8 +14,8 @@
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif}
 header{display:flex;flex-direction:column;padding:12px 16px 0;max-width:640px;margin:auto}
 h1{font-size:20px;margin:0}#st{font-size:12px;color:var(--mu)}
-nav{display:flex;gap:6px;padding:10px 16px;max-width:640px;margin:auto;position:sticky;top:0;background:var(--bg);z-index:5}
-nav button{flex:1;padding:9px 0;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:10px;font:inherit}
+nav{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;max-width:640px;margin:auto;position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:1 1 22%;padding:9px 0;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:10px;font:inherit}
 nav button.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
 main{max-width:640px;margin:auto;padding:0 16px 40px}
 .cd{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
@@ -31,16 +31,19 @@ textarea{min-height:120px;font:12px/1.4 ui-monospace,monospace}
 code{font-size:12px;word-break:break-all}
 .ax{fill:var(--mu);font-size:11px}.gl{stroke:var(--bd)}.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin-top:4px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}table.rk{width:100%;border-collapse:collapse;font-size:13px}table.rk td{padding:4px 2px;border-top:1px solid var(--bd)}table.rk td:nth-child(n+3){text-align:right}
 nav button{font-size:14px}
+@media print{header,nav,.noprint{display:none!important}:root{--bg:#fff;--cd:#fff;--tx:#000;--mu:#555;--bd:#ccc;padding:0}body{background:#fff;color:#000}.sec{display:none!important}.sec.on{display:block!important}.cd{border:0;padding:6px 0;break-inside:avoid}main{max-width:none;padding:0}}
 </style>
 </head>
 <body>
 <header><h1>生活記錄</h1><span id="st">載入中…</span></header>
-<nav><button data-t="in" class="on">輸入</button><button data-t="hi">歷史</button><button data-t="se">設定</button><button data-t="ch">圖表</button><button data-t="ba">備份同步</button></nav>
+<nav><button data-t="in" class="on">輸入</button><button data-t="hi">歷史</button><button data-t="ch">圖表</button><button data-t="yr">年度總覽</button><button data-t="sr">搜尋報告</button><button data-t="se">設定</button><button data-t="ba">備份同步</button></nav>
 <main>
 <section id="in" class="sec on"></section>
 <section id="hi" class="sec"></section>
 <section id="se" class="sec"></section>
 <section id="ch" class="sec"></section>
+<section id="yr" class="sec"></section>
+<section id="sr" class="sec"></section>
 <section id="ba" class="sec"></section>
 </main>
 <script>
@@ -56,12 +59,13 @@ const DEF={cur:["HKD","JPY","CNY","TWD","KRW","USD"],pay:["現金","信用卡/�
 items:[{id:"weight",n:"體重",t:"num",u:"kg",w:"t"},{id:"act",n:"行動指數(共同活動次數)",t:"int",u:"",w:"y"},{id:"cig",n:"吸煙枝數",t:"int",u:"枝",w:"y"},{id:"drk",n:"有否飲酒",t:"yn",u:"",w:"y"},{id:"stp",n:"步行步數",t:"int",u:"步",w:"y"},{id:"rnk",n:"全球步數排名",t:"int",u:"",w:"y"}]};
 const SEED=[["譚仔三哥米線",78,"JPY","信用卡/銀行扣款",null,"外食及飲品",""],["駐車場",63,"JPY","現金",null,"車用支出","駐車場"],["高速道路料金",57,"JPY","信用卡/銀行扣款",null,"車用支出","高速道路料金"],["肉のハナマサ",56,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["業務スーパー",47,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Amazon",42,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ひまわり青果",37,"JPY","PayPay",null,"食品雜貨",""],["オーケー",35,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["サミット",31,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Daiso",28,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["ニキ先生",28,"JPY","PayPay",3000,"教育及學習",""],["現金回贈",27,"JPY","匯豐扣賬卡",null,"金融及稅務","現金回贈"],["Suicaカード",26,"JPY","信用卡/銀行扣款",null,"交通","Suicaカード"],["まいばすけっと",23,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["セフンーイレブン",21,"JPY","信用卡/銀行扣款",null,"食品雜貨",""],["Tata",19,"JPY","信用卡/銀行扣款",null,"收入及退款","","r"],["コスモ",19,"JPY","信用卡/銀行扣款",null,"車用支出","ガソリン"],["ドン・キホーテ",17,"JPY","信用卡/銀行扣款",null,"購物及日用品",""],["三代目茂蔵",16,"JPY","現金",null,"外食及飲品",""],["京和商店",13,"JPY","PayPay",null,"食品雜貨",""]];
 const DEFCATS=[{n:"食品雜貨"},{n:"外食及飲品"},{n:"飲酒"},{n:"煙"},{n:"交通",s:["八達通","Suicaカード","Pasmoカード","タクシー","バス","その他"]},{n:"車用支出",s:["ガソリン","駐車場","高速道路料金","トンネル","その他"]},{n:"居住支出",s:["管理費","水道局","電気代","ガス代","差餉","家賃","住宅ローン","その他"]},{n:"通訊及網絡"},{n:"醫療保健"},{n:"保險"},{n:"教育及學習"},{n:"捐款"},{n:"娛樂及閱讀"},{n:"購物及日用品"},{n:"旅行",s:["航空券","ホテル","ビザ","両替","その他"]},{n:"家人及轉帳"},{n:"金融及稅務",s:["現金回贈","利息","その他"]},{n:"收入及退款"},{n:"個人護理"},{n:"家務及人工"}];
+const DEFTRK=["ガス代=居住支出›ガス代","電気代=居住支出›電気代","水道局=居住支出›水道局","Softbank","IIJ","匯豐基金保險","ネコ天ハウス"],DEFRENT=["籐屋商事","ウエルスパーク"];
 const TT={"":"—",x:"公務(可報銷)",r:"公司退回"};
 const calc=(t,T)=>{t=String(t||"").trim().replace(/[Tt總]/g,"("+T+")");if(!t)return 0;if(!/^[0-9+\-*/().\s]+$/.test(t))return NaN;try{const v=Function('"use strict";return ('+t+')')();return isFinite(v)?Math.round(v*100)/100:NaN}catch(e){return NaN}};
-const parts=e=>{const o=[],sp=e.sp||{};let m=e.a;for(const k in sp)if(sp[k]>0){o.push({g:k,a:sp[k]});m-=sp[k]}o.push({g:e.g||"",a:m});return o};
+const parts=e=>{const o=[],sp=e.sp||{};let m=e.a;for(const k in sp)if(sp[k]>0){o.push({g:k,s:"",a:sp[k]});m-=sp[k]}o.push({g:e.g||"",s:e.s||"",a:m});return o};
 const gSum=(es,g)=>{const o={};es.forEach(e=>{if(e.k===false||e.a<=0)return;parts(e).forEach(p=>{if(p.g===g)o[e.c]=(o[e.c]||0)+p.a})});return o};
 const gTxt=o=>{const k=Object.keys(o);return k.length?k.map(c=>c+" "+o[c].toLocaleString(undefined,{maximumFractionDigits:2})).join(" / "):"—"};
-let cfg=null,M={},idx=[],FQ={},ed=YDAY,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null,ei=null;
+let cfg=null,M={},idx=[],FQ={},ed=TODAY,idate=null,lastCur="JPY",lastPay="現金",busy=false,timer=null,dp=null,ei=null;
 const msg=t=>{$("#st").textContent=t};
 const ld=k=>IDB.get(k),sv=(k,o)=>IDB.set(k,o),mk=d=>"m"+d.slice(0,7);
 async function gm(d){const k=mk(d);if(!M[k])M[k]=await ld(k)||{days:{}};return M[k]}
@@ -73,8 +77,8 @@ const chips=()=>fav().map(([k])=>`<button class="btn g" style="margin:3px 3px 0 
 const catOpts=sel=>`<option value="">—</option>`+cfg.cats.map(c=>`<option${c.n===sel?" selected":""}>${esc(c.n)}</option>`).join("");
 const subOpts=(cat,sel)=>{const c=cfg.cats.find(x=>x.n===cat);return c&&c.s&&c.s.length?`<option value="">—</option>`+c.s.map(x=>`<option${x===sel?" selected":""}>${esc(x)}</option>`).join(""):`<option value="">(無子分類)</option>`};
 function pick(k){const f=fav().find(x=>x[0]===k);if(!f)return;const v=f[1];$("#en").value=k;if(v.c&&cfg.cur.includes(v.c))$("#ec").value=v.c;if(v.p&&cfg.pay.includes(v.p))$("#ep").value=v.p;$("#ea").value=v.a!=null?v.a:"";
- $("#eg").value=v.g||"";$("#es").innerHTML=subOpts(v.g||"",v.s||"");$("#etx").value=v.tt||"";$("#ea").focus()}
-function bump(n,a,c,p,g,s,tt){const o=FQ[n]||{},b=(SEED.find(x=>x[0]===n)||[])[1]||0;FQ[n]={n:(o.n||b)+1,c,p,g,s,tt:tt||"",la:a,a:o.la===a?a:null}}
+ $("#eg").value=v.g||"";$("#es").innerHTML=subOpts(v.g||"",v.s||"");$("#etx").value=v.tt||"";$("#erf").value=v.rf?"1":"";$("#ea").focus()}
+function bump(n,a,c,p,g,s,tt,rf){const o=FQ[n]||{},b=(SEED.find(x=>x[0]===n)||[])[1]||0;FQ[n]={n:(o.n||b)+1,c,p,g,s,tt:tt||"",rf:!!rf,la:a,a:o.la===a?a:null}}
 function tot(e){const o={};e.forEach(x=>{if(x.k!==false)o[x.c]=(o[x.c]||0)+x.a});return Object.entries(o).map(([c,a])=>c+" "+a.toLocaleString(undefined,{maximumFractionDigits:2})).join(" / ")||"—"}
 function fld(it,val){const id="f_"+it.id,v=val==null?"":val;
  if(it.t==="yn")return`<select id="${id}"><option value="">—</option><option value="Y"${v==="Y"?" selected":""}>有</option><option value="N"${v==="N"?" selected":""}>沒有</option></select>`;
@@ -82,33 +86,35 @@ function fld(it,val){const id="f_"+it.id,v=val==null?"":val;
 const ttSum=es=>{const o={};es.forEach(x=>{if(!x.tt)return;const m=o[x.c]||(o[x.c]={x:0,r:0});m[x.tt]+=Math.abs(x.a)});return o};
 const ttTxt=o=>{const k=Object.keys(o);return k.length?k.map(c=>`${c} 公務 ${o[c].x.toLocaleString(undefined,{maximumFractionDigits:2})} / 退回 ${o[c].r.toLocaleString(undefined,{maximumFractionDigits:2})} / 未退回 ${(o[c].x-o[c].r).toLocaleString(undefined,{maximumFractionDigits:2})}`).join("<br>"):"沒有記錄"};
 async function rIn(){
- const wd=addD(ed,1)>TODAY?TODAY:addD(ed,1),dY=await gd(ed),dT=await gd(wd),it=cfg.items.filter(i=>!i.off),E=ei!=null&&dY.e[ei]?dY.e[ei]:null;
- const rows=it.map(i=>{const d=i.w==="t"?dT:dY;return`<label>${esc(i.n)}${i.u?"("+esc(i.u)+")":""} <span class="mu">${i.w==="t"?"記在 "+wd:ed}</span></label>${fld(i,d.v[i.id])}`}).join("");
+ if(!idate)idate=cfg.itemDay==="t"?TODAY:YDAY;
+ const wd=addD(idate,1)>TODAY?TODAY:addD(idate,1),dY=await gd(ed),dI=await gd(idate),dT=await gd(wd),it=cfg.items.filter(i=>!i.off),E=ei!=null&&dY.e[ei]?dY.e[ei]:null;
+ const rows=it.map(i=>{const d=i.w==="t"?dT:dI;return`<label>${esc(i.n)}${i.u?"("+esc(i.u)+")":""} <span class="mu">${i.w==="t"?"記在 "+wd:idate}</span></label>${fld(i,d.v[i.id])}`}).join("");
  const ex=dY.e.map((x,n)=>`<div class="it"><span>${esc(x.n)}${x.p?` <span class="mu">${esc(x.p)}</span>`:""}<br><span class="mu">${esc([x.g,x.s].filter(Boolean).join(" › "))}${x.t?" #"+esc(x.t):""}${x.tt?" ・"+TT[x.tt]:""}${x.sp?" ・其中 "+Object.entries(x.sp).map(([k,v])=>k+" "+v.toLocaleString()).join("、"):""}${x.k===false?" ・不計入合計":""}</span></span><span style="text-align:right">${x.a.toLocaleString()} ${esc(x.c)}<br><button class="x" data-tt="${n}">${x.tt==="x"?"取消公務":"標記公務"}</button><button class="x" data-ex="${n}">編輯</button><button class="x" data-del="${n}">刪除</button></span></div>`).join("");
  const ev=E||{},ecur=ev.c||lastCur,epay=ev.p!=null?ev.p:lastPay;
- $("#in").innerHTML=`<div class="cd"><h2>日期(預設昨天)</h2><input type="date" id="ed" value="${ed}" max="${TODAY}"></div>
+ $("#in").innerHTML=`<div class="cd"><h2>日期</h2><div class="r"><div><label>支出日期(預設今天)</label><input type="date" id="ed" value="${ed}" max="${TODAY}"></div><div><label>每日項目日期(預設${cfg.itemDay==="t"?"今天":"昨天"})</label><input type="date" id="id" value="${idate}" max="${TODAY}"></div></div></div>
  <div class="cd"><h2>每日項目</h2>${rows}<button class="btn" id="sdv">儲存每日項目</button></div>
  <div class="cd"><h2>${E?"編輯支出":"支出"}</h2>${E?"":`<div>${chips()}</div>`}<label>項目</label><input id="en" value="${esc(ev.n||"")}" placeholder="可自由輸入,或點上面的常用項目">
  <div class="r"><div><label>金額</label><input id="ea" type="number" inputmode="decimal" step="any" value="${E?Math.abs(E.a):""}"></div><div><label>幣種</label><select id="ec">${cfg.cur.map(c=>`<option${c===ecur?" selected":""}>${esc(c)}</option>`).join("")}</select></div></div>
+ <label>類型</label><select id="erf"><option value="">支出</option><option value="1"${E&&E.a<0&&E.tt!=="r"?" selected":""}>退款或收入(記為負數)</option></select>
  <div class="r"><div><label>付款方式</label><select id="ep"><option value="">—</option>${cfg.pay.map(p=>`<option${p===epay?" selected":""}>${esc(p)}</option>`).join("")}</select></div><div><label>分類</label><select id="eg">${catOpts(ev.g||"")}</select></div></div>
  <div class="r"><div><label>子分類</label><select id="es">${subOpts(ev.g||"",ev.s||"")}</select></div><div><label>標籤(可留空)</label><input id="et" value="${esc(ev.t||"")}"></div></div>
  <label>Tata(公司報銷)</label><select id="etx"><option value="">—</option><option value="x"${ev.tt==="x"?" selected":""}>公務支出(可報銷)</option><option value="r"${ev.tt==="r"?" selected":""}>公司退回(輸入正數)</option></select>
  <div class="r"><div><label>其中飲酒金額(可輸入算式,T=總額)</label><input id="ew" value="${E&&E.sp&&E.sp["飲酒"]?E.sp["飲酒"]:""}" placeholder="例如 T-1344-107"></div><div><label>其中煙金額</label><input id="esk" value="${E&&E.sp&&E.sp["煙"]?E.sp["煙"]:""}" placeholder="例如 580"></div></div>
  <label><input type="checkbox" id="ek" ${E&&E.k===false?"":"checked"} style="width:auto"> 計入每日合計</label><button class="btn" id="aex">${E?"更新支出":"加入支出"}</button>${E?` <button class="btn g" id="cex">取消編輯</button>`:""}</div>
  <div class="cd"><h2>${ed} 的支出</h2>${ex||'<span class="mu">還沒有記錄</span>'}<div class="it"><b>合計</b><b>${esc(tot(dY.e))}</b></div></div>`;
- $("#ed").onchange=e=>{ed=e.target.value||YDAY;ei=null;rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
+ $("#ed").onchange=e=>{ed=e.target.value||TODAY;ei=null;rIn()};$("#id").onchange=e=>{idate=e.target.value||(cfg.itemDay==="t"?TODAY:YDAY);rIn()};document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>pick(b.dataset.ch));
  $("#eg").onchange=()=>{$("#es").innerHTML=subOpts($("#eg").value,"")};
- $("#sdv").onclick=async()=>{for(const i of it){const d=i.w==="t"?dT:dY,v=$("#f_"+i.id).value;
+ $("#sdv").onclick=async()=>{for(const i of it){const d=i.w==="t"?dT:dI,v=$("#f_"+i.id).value;
    if(v==="")delete d.v[i.id];else d.v[i.id]=i.t==="yn"?v:Number(v)}
-   await sm(ed);await sm(wd);$("#sdv").textContent="已儲存 ✓";setTimeout(()=>$("#sdv")&&($("#sdv").textContent="儲存每日項目"),1500)};
+   await sm(idate);await sm(wd);$("#sdv").textContent="已儲存 ✓";setTimeout(()=>$("#sdv")&&($("#sdv").textContent="儲存每日項目"),1500)};
  $("#aex").onclick=async()=>{const n=$("#en").value.trim();let a=parseFloat($("#ea").value);if(!n||isNaN(a))return;
    lastCur=$("#ec").value;lastPay=$("#ep").value;const p=lastPay,tt=$("#etx").value,g=$("#eg").value,s=$("#es").value,k=$("#ek").checked&&p!=="樂天Pay(積分)";
-   if(tt==="r")a=-Math.abs(a);const en={n,a,c:lastCur,p,g,s,t:$("#et").value.trim(),k};if(tt)en.tt=tt;
+   if(tt==="r"||$("#erf").value==="1")a=-Math.abs(a);const en={n,a,c:lastCur,p,g,s,t:$("#et").value.trim(),k};if(tt)en.tt=tt;
    if(a>0){const w=calc($("#ew").value,a),sk=calc($("#esk").value,a);
     if(isNaN(w)||isNaN(sk)||w<0||sk<0){msg("⚠ 酒類或煙的金額算式不正確");return}
     if(w+sk>a+0.005){msg("⚠ 酒類加煙的金額不能大於總額");return}
     if(w>0||sk>0){en.sp={};if(w>0)en.sp["飲酒"]=w;if(sk>0)en.sp["煙"]=sk}}
-   if(E){const o=dY.e[ei];if(o.z)en.z=o.z;if(o.tv!=null){en.tv=o.tv;en.tc=o.tc;en.r=o.r}dY.e[ei]=en;ei=null}else{dY.e.push(en);bump(n,a,lastCur,p,g,s,tt);await sv("freq",FQ)}
+   if(E){const o=dY.e[ei];if(o.z)en.z=o.z;if(o.tv!=null){en.tv=o.tv;en.tc=o.tc;en.r=o.r}dY.e[ei]=en;ei=null}else{dY.e.push(en);bump(n,Math.abs(a),lastCur,p,g,s,tt,a<0&&tt!=="r");await sv("freq",FQ)}
    await sm(ed);rIn()};
  if(E)$("#cex").onclick=()=>{ei=null;rIn()};
  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{dY.e.splice(+b.dataset.del,1);ei=null;await sm(ed);rIn()});
@@ -118,17 +124,21 @@ async function rHi(m){m=m||TODAY.slice(0,7);const mo=await gm(m+"-01"),ds=Object
  $("#hi").innerHTML=`<div class="cd"><h2>月份</h2><input type="month" id="hm" value="${m}"></div>
  <div class="cd"><h2>Tata 報銷(本月)</h2><div class="mu" style="font-size:14px">${ttTxt(ttSum(all))}</div><button class="btn g" id="ty">查看全年報銷</button><div id="tyr"></div></div>`+`<div class="cd"><h2>本月飲酒及煙(包括單內拆分)</h2><div class="mu" style="font-size:14px">飲酒:${gTxt(gSum(all,"飲酒"))}<br>煙:${gTxt(gSum(all,"煙"))}</div></div>`+(ds.map(d=>{const x=mo.days[d],v=cfg.items.filter(i=>x.v[i.id]!=null).map(i=>i.n.split("(")[0]+" "+(x.v[i.id]==="Y"?"有":x.v[i.id]==="N"?"沒有":x.v[i.id])).join("・");
  return`<div class="cd"><div class="it" style="border:0;padding:0"><b>${d}</b><span>${esc(tot(x.e))}</span></div><div class="mu">${x.e.length} 筆支出${v?" ・ "+esc(v):""}</div><button class="btn g" data-ed="${d}">編輯這一天</button></div>`}).join("")||'<div class="cd mu">這個月沒有記錄</div>');
- $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=b.dataset.ed;ei=null;tab("in")});
+ $("#hm").onchange=e=>rHi(e.target.value);document.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{ed=idate=b.dataset.ed;ei=null;tab("in")});
  $("#ty").onclick=async()=>{const y=m.slice(0,4);let h=`<p class="mu">${y} 年</p>`;const yt=[];
   for(let i=1;i<=12;i++){const mm=y+"-"+pad(i),mo2=await gm(mm+"-01"),es=Object.values(mo2.days).flatMap(d=>d.e);yt.push(...es);const t=ttSum(es);if(Object.keys(t).length)h+=`<div class="it"><b>${i} 月</b><span style="text-align:right">${ttTxt(t)}</span></div>`}
   h+=`<div class="it"><b>全年</b><span style="text-align:right"><b>${ttTxt(ttSum(yt))}</b></span></div>`;$("#tyr").innerHTML=h}}
 function rSe(){const it=cfg.items.map((i,n)=>`<div class="it"><span>${esc(i.n)} <span class="mu">${i.t==="yn"?"是/否":i.t==="int"?"整數":"小數"}・${i.w==="t"?"記今天":"記昨天"}${i.off?"・已停用":""}</span></span><button class="x" data-tg="${n}">${i.off?"啟用":"停用"}</button></div>`).join("");
  $("#se").innerHTML=`<div class="cd"><h2>每日項目</h2>${it}<label>新增項目名稱</label><input id="nn"><div class="r"><div><label>類型</label><select id="nt"><option value="int">整數</option><option value="num">小數</option><option value="yn">是/否</option></select></div><div><label>單位</label><input id="nu"></div></div><label>記錄哪一天</label><select id="nw"><option value="y">昨天</option><option value="t">今天</option></select><button class="btn" id="ni">新增項目</button></div>
  <div class="cd"><h2>分類(每行一個,冒號後是子分類,用逗號分隔)</h2><textarea id="ct">${esc(cfg.cats.map(c=>c.n+(c.s&&c.s.length?": "+c.s.join(","):"")).join("\n"))}</textarea><button class="btn" id="cs">儲存分類</button></div>
+ <div class="cd"><h2>每日項目的預設日期</h2><select id="idd"><option value="y"${cfg.itemDay==="t"?"":" selected"}>昨天(今天輸入昨天的數據;體重記今天)</option><option value="t"${cfg.itemDay==="t"?" selected":""}>今天</option></select></div>
+ <div class="cd"><h2>年度總覽的追蹤項目(每行一個)</h2><p class="mu">寫法:「顯示名稱=分類›子分類」、「顯示名稱=分類」或直接寫項目名稱(名稱包含該字就計入)。</p><textarea id="tk">${esc((cfg.trk||[]).join("\n"))}</textarea><h2 style="margin-top:12px">租金收入項目名稱(用逗號分隔)</h2><input id="rn" value="${esc((cfg.rent||[]).join(","))}"><button class="btn" id="tks">儲存追蹤項目</button></div>
  <div class="cd"><h2>幣種(用逗號分隔)</h2><input id="cu" value="${esc(cfg.cur.join(","))}"><h2 style="margin-top:14px">付款方式(用逗號分隔)</h2><input id="pa" value="${esc(cfg.pay.join(","))}"><button class="btn" id="sc">儲存</button></div>`;
  document.querySelectorAll("[data-tg]").forEach(b=>b.onclick=async()=>{const i=cfg.items[+b.dataset.tg];i.off=!i.off;await scfg();rSe()});
  $("#ni").onclick=async()=>{const n=$("#nn").value.trim();if(!n)return;cfg.items.push({id:"i"+Date.now(),n,t:$("#nt").value,u:$("#nu").value.trim(),w:$("#nw").value});await scfg();rSe()};
  $("#cs").onclick=async()=>{cfg.cats=$("#ct").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.search(/[:：]/);return i<0?{n:l}:{n:l.slice(0,i).trim(),s:l.slice(i+1).split(/[,、，]/).map(x=>x.trim()).filter(Boolean)}});await scfg();$("#cs").textContent="已儲存 ✓"};
+ $("#idd").onchange=async()=>{cfg.itemDay=$("#idd").value;idate=null;await scfg()};
+ $("#tks").onclick=async()=>{cfg.trk=$("#tk").value.split("\n").map(l=>l.trim()).filter(Boolean);cfg.rent=$("#rn").value.split(/[,、，]/).map(x=>x.trim()).filter(Boolean);await scfg();$("#tks").textContent="已儲存 ✓"};
  $("#sc").onclick=async()=>{const f=s=>s.split(",").map(x=>x.trim()).filter(Boolean);cfg.cur=f($("#cu").value);cfg.pay=f($("#pa").value);await scfg();$("#sc").textContent="已儲存 ✓"}}
 /* ---------- charts (same set as the 2026 Excel) ---------- */
 const PAL=["#2f7fd1","#e8802a","#7a8b99","#e6b422","#3aa17e","#9b59b6","#d9534f","#8c6d46"];
@@ -144,7 +154,7 @@ function model(y,ms,c){
    let q=0;
    for(const e of es){const val=jv(e,c);if(val==null)continue;const cnt=e.k!==false;
     if(cnt){if(e.z)M.C+=val;else{M.B+=val;q+=val}}
-    const k=nm0(e.n);if(cnt&&!e.z&&e.c===c){R.items[k]=(R.items[k]||0)+val;(R.itemM[k]||(R.itemM[k]=Array(12).fill(0)))[m-1]+=val}
+    const k=nm0(e.n);if(cnt&&!e.z&&e.c===c&&e.g!=="旅行"&&!/住民[税稅]/.test(e.n)){R.items[k]=(R.items[k]||0)+val;(R.itemM[k]||(R.itemM[k]=Array(12).fill(0)))[m-1]+=val}
     if(e.a>0){const ra=val/e.a,sp=e.sp||{};let main=val;for(const kk in sp){const pv=sp[kk]*ra;main-=pv;if(kk==="飲酒")M.drink+=pv}
      if(e.g==="飲酒")M.drink+=main;if(e.g==="車用支出"){if(e.s==="ガソリン")M.gas+=main;if(e.s==="駐車場")M.park+=main;if(e.s==="高速道路料金")M.toll+=main}if(e.g==="醫療保健")M.med+=main}
     if(e.g==="居住支出"){if(e.s==="ガス代")M.u1+=val;if(e.s==="電気代")M.u2+=val;if(e.s==="水道局")M.u3+=val}
@@ -200,7 +210,7 @@ async function rCh(){
  const rk=Object.entries(R.items).sort((a,b)=>b[1]-a[1]),tp=rk.filter(x=>x[1]>0).reduce((a,x)=>a+x[1],0),top5=rk.slice(0,5);
  h+=sBar("項目排行前五名(每月)",MN,top5.map(([k])=>({n:k,v:R.itemM[k]})));
  h+=sPie("項目排行前五名(佔比)",top5.map(([k,v])=>({n:k,v})));
- let c2=0;h+=card("項目排行(全年前 15;不含必然支出和外幣換算項目)",`<table class="rk">${rk.slice(0,15).map(([k,v],i)=>{c2+=v;return`<tr><td>${i+1}</td><td>${esc(k)}</td><td>${Math.round(v).toLocaleString()}</td><td>${tp?Math.round(v/tp*1000)/10:0}%</td><td>${tp?Math.round(c2/tp*1000)/10:0}%</td></tr>`}).join("")}</table><p class="mu">百分比以全年正數項目合計為基數;可能與 Excel 的基數略有不同。</p>`);
+ let c2=0;h+=card("項目排行(全年前 15;不含必然支出、外幣換算項目、旅行分類和住民稅)",`<table class="rk">${rk.slice(0,15).map(([k,v],i)=>{c2+=v;return`<tr><td>${i+1}</td><td>${esc(k)}</td><td>${Math.round(v).toLocaleString()}</td><td>${tp?Math.round(v/tp*1000)/10:0}%</td><td>${tp?Math.round(c2/tp*1000)/10:0}%</td></tr>`}).join("")}</table><p class="mu">百分比以全年正數項目合計為基數;可能與 Excel 的基數略有不同。</p>`);
  h+=sLine("每月指數(每月飲酒日數、行動次數、吸煙日數)",MN,[{n:"飲酒月結",v:mo12.map(x=>x.m<=last?x.F:null)},{n:"行動月結",v:mo12.map(x=>x.m<=last?x.G:null)},{n:"吸煙月結",v:mo12.map(x=>x.m<=last?x.H:null)}]);
  const dl=R.yr.last,dlab=Array.from({length:dl},(_,i)=>i+1);
  h+=sLine("每日累積百分比",dlab,[{n:"飲酒總比率",v:R.yr.O},{n:"行動總比率",v:R.yr.P},{n:"吸煙總比率",v:R.yr.Q}],{pct:true});
@@ -208,6 +218,140 @@ async function rCh(){
  h+=sLine("全年每日步數及平均",dlab,[{n:"每日步數",v:R.yr.S},{n:"平均",v:R.yr.SA}]);
  $("#ch").innerHTML=h;
  $("#cy").onchange=e=>{chY=e.target.value;chM=null;chC=null;rCh()};$("#cm").onchange=e=>{chM=+e.target.value;rCh()};$("#cc").onchange=e=>{chC=e.target.value;rCh()}}
+/* ---------- year overview (replaces the Excel Timesheet sheet) ---------- */
+let yrY=null,yrC=null;
+function specOf(t){const i=t.indexOf("="),label=(i>=0?t.slice(0,i):t).trim(),sp=(i>=0?t.slice(i+1):t).trim();let f;
+ if(sp.includes("›")){const[g,s]=sp.split("›").map(x=>x.trim());f=e=>parts(e).filter(p=>p.g===g&&p.s===s).reduce((a,p)=>a+p.a,0)}
+ else if(cfg.cats.some(c=>c.n===sp))f=e=>parts(e).filter(p=>p.g===sp).reduce((a,p)=>a+p.a,0);
+ else{const k=sp.toLowerCase();f=e=>String(e.n).toLowerCase().includes(k)?e.a:0}
+ return{label,f}}
+async function rYr(){
+ const ys=[...new Set(idx.map(k=>k.slice(1,5)))].sort();if(!ys.length){$("#yr").innerHTML='<div class="cd mu">還沒有數據</div>';return}
+ if(!yrY||!ys.includes(yrY))yrY=ys[ys.length-1];const y=+yrY,ms=await yearDocs(y);
+ if(!yrC){const tt={};ms.forEach(mo=>Object.values(mo.days).forEach(x=>x.e.forEach(e=>{if(e.k!==false)tt[e.c]=(tt[e.c]||0)+1})));yrC=Object.keys(tt).sort((a,b)=>tt[b]-tt[a])[0]||"JPY"}
+ const c=yrC,R=model(y,ms,c),MO=R.months,dm=MO.filter(M=>M.last>0).length,last=Math.max(0,...MO.map(M=>M.last>0?M.m:0));
+ const trk=(cfg.trk||[]).map(specOf),rent=(cfg.rent||[]).map(n=>specOf(n+"="+n));
+ const Z=()=>Array(12).fill(0),T=trk.map(Z),RN=rent.map(Z),TX=Z(),TR=Z(),CT={},FX={},HI=Z();
+ ms.forEach((mo,mi)=>Object.values(mo.days).forEach(x=>x.e.forEach(e=>{if(e.c!==c&&e.tv==null){(FX[e.c]||(FX[e.c]=Z()))[mi]+=e.a;if(e.c==="HKD"&&/匯豐基金保險/.test(e.n))HI[mi]+=e.a}const val=jv(e,c);if(val==null||!e.a)return;const ra=val/e.a;
+  trk.forEach((s,i)=>{T[i][mi]+=s.f(e)*ra});rent.forEach((s,i)=>{RN[i][mi]+=s.f(e)*ra});
+  if(e.tt){if(e.tt==="x")TX[mi]+=Math.abs(val);else TR[mi]+=Math.abs(val)}
+  if(e.k!==false)for(const p of parts(e)){const g=p.g||"(未分類)",o=CT[g]||(CT[g]={m:Z(),s:{}});o.m[mi]+=p.a*ra;if(p.s)(o.s[p.s]||(o.s[p.s]=Z()))[mi]+=p.a*ra}})));
+ const sum=a=>a.reduce((x,v)=>x+v,0),f=n=>fmt2(n),avg=(a,lab)=>`<tr><td>${esc(lab)}</td><td>${f(sum(a))}</td><td>${f(sum(a)/12)}</td><td>${dm?f(sum(a)/dm):"—"}</td></tr>`,mh=["","1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+ const curs=[...new Set([c,...cfg.cur])],tot={B:sum(MO.map(M=>M.B)),C:sum(MO.map(M=>M.C)),D:sum(MO.map(M=>M.D)),inc:sum(MO.map(M=>M.inc)),E:sum(MO.map(M=>M.E))};
+ let h=`<div class="cd noprint"><div class="r"><div><label>年份</label><select id="yy">${ys.map(v=>`<option${v===yrY?" selected":""}>${v}</option>`).join("")}</select></div><div><label>幣種</label><select id="yc">${curs.map(v=>`<option${v===c?" selected":""}>${esc(v)}</option>`).join("")}</select></div></div></div>`;
+ h+=card(y+" 年 每月收支("+esc(c)+")",`<div style="overflow-x:auto"><table class="rk"><tr><td></td><td>每月消費</td><td>必然支出</td><td>總支出</td><td>每月收入(可輸入)</td><td>每月總結</td><td>月尾結存</td></tr>${MO.map(M=>`<tr><td>${M.m}月</td><td>${f(M.B)}</td><td>${f(M.C)}</td><td>${f(M.D)}</td><td><input type="number" inputmode="decimal" step="any" data-inc="${M.m}" value="${M.inc||""}" style="width:110px;padding:4px"></td><td>${f(M.E)}</td><td>${M.m<=last?f(M.bal):""}</td></tr>`).join("")}<tr><td><b>年結</b></td><td><b>${f(tot.B)}</b></td><td><b>${f(tot.C)}</b></td><td><b>${f(tot.D)}</b></td><td><b>${f(tot.inc)}</b></td><td><b>${f(tot.E)}</b></td><td></td></tr></table></div><p class="mu">每月收入是手動輸入的數字(例如薪金)。每月總結 = 收入 − 總支出;月尾結存由 1 月起累計。</p>`);
+ const fxc=Object.keys(FX).filter(k=>FX[k].some(v=>Math.abs(v)>0.005)).sort((a,b)=>a==="HKD"?-1:b==="HKD"?1:sum(FX[b].map(Math.abs))-sum(FX[a].map(Math.abs))).slice(0,6),hk=!!FX.HKD&&fxc.includes("HKD");
+ if(fxc.length)h+=card(y+" 年 外幣支出(原幣,每月及全年)",`<div style="overflow-x:auto"><table class="rk"><tr><td></td>${fxc.map(k=>`<td>${esc(k)}</td>`).join("")}${hk?"<td>其中匯豐基金保險</td>":""}</tr>${MO.map(M=>`<tr><td>${M.m}月</td>${fxc.map(k=>`<td>${Math.abs(FX[k][M.m-1])<0.005?"":f(FX[k][M.m-1])}</td>`).join("")}${hk?`<td>${HI[M.m-1]?f(HI[M.m-1]):""}</td>`:""}</tr>`).join("")}<tr><td><b>年結</b></td>${fxc.map(k=>`<td><b>${f(sum(FX[k]))}</b></td>`).join("")}${hk?`<td><b>${f(sum(HI))}</b></td>`:""}</tr></table></div><p class="mu">原幣金額,不換算。包括不計入每日合計的項目,不包括已換算成 ${esc(c)} 的記錄。你 Excel 的「港幣交易」在部分月份不含匯豐基金保險,所以那些月份這裡會比 Excel 多出「其中匯豐基金保險」的金額。</p>`);
+ const rr=rent.map((s,i)=>avg(RN[i],s.label)).join(""),rt=sum(RN.map(sum));
+ h+=card("全年租金收入",`<table class="rk"><tr><td>項目</td><td>全年(記錄值)</td><td>÷12</td><td>÷有記錄月份</td></tr>${rr}<tr><td><b>租金收入合計</b></td><td><b>${f(-rt)}</b></td><td>${f(-rt/12)}</td><td>${dm?f(-rt/dm):"—"}</td></tr></table><p class="mu">租金收入記為負數(收入),合計行已轉為正數。項目名稱可在「設定」修改。</p>`);
+ h+=card("全年及每月平均 — 追蹤項目",`<table class="rk"><tr><td>項目</td><td>全年</td><td>÷12</td><td>÷有記錄月份</td></tr>${avg(TX,"Tata 公務支出")}${avg(TR,"Tata 公司退回")}${avg(TX.map((v,i)=>v-TR[i]),"Tata 淨額(公務−退回)")}${trk.map((s,i)=>avg(T[i],s.label)).join("")}</table><p class="mu">÷有記錄月份 = ${dm} 個月(該年有記錄的月份)。追蹤項目可在「設定」修改。</p>`);
+ h+=card("追蹤項目每月金額",`<div style="overflow-x:auto"><table class="rk"><tr>${mh.map(v=>`<td>${v}</td>`).join("")}</tr>${trk.map((s,i)=>`<tr><td>${esc(s.label)}</td>${T[i].map(v=>`<td>${Math.abs(v)<0.005?"":f(v)}</td>`).join("")}</tr>`).join("")}</table></div>`);
+ const cn=Object.entries(CT).sort((a,b)=>sum(b[1].m)-sum(a[1].m)),catRows=[];cn.forEach(([g,o])=>{catRows.push([g,o.m,0]);Object.entries(o.s).sort((a,b)=>sum(b[1])-sum(a[1])).forEach(([s,m])=>catRows.push(["　"+s,m,1]))});
+ h+=card("全年及每月平均 — 全部分類("+esc(c)+")",`<table class="rk"><tr><td>分類</td><td>全年</td><td>÷12</td><td>÷有記錄月份</td></tr>${catRows.map(([n,m,sub])=>`<tr><td${sub?' style="color:var(--mu)"':""}>${esc(n)}</td><td>${f(sum(m))}</td><td>${f(sum(m)/12)}</td><td>${dm?f(sum(m)/dm):"—"}</td></tr>`).join("")}</table><p class="mu">只計入「計入每日合計」的項目,退款已扣除。</p>`);
+ $("#yr").innerHTML=h+exBtns();
+ const hd=a=>Object.assign(a,{hd:1}),rowAvg=(l,a)=>[l,fm2(sum(a)),fm2(sum(a)/12),dm?fm2(sum(a)/dm):"",...a.map(fm2)];
+ srR={type:"year",sheets:[{name:"每月收支",rows:[hd(["月份","每月消費","必然支出","總支出","每月收入","每月總結","月尾結存"]),...MO.map(M=>[M.m+"月",fm2(M.B),fm2(M.C),fm2(M.D),fm2(M.inc),fm2(M.E),M.m<=last?fm2(M.bal):""]),["年結",fm2(tot.B),fm2(tot.C),fm2(tot.D),fm2(tot.inc),fm2(tot.E)]]},
+  {name:"追蹤項目",rows:[hd(["項目","全年","÷12","÷有記錄月份",...mh.slice(1)]),rowAvg("Tata 公務支出",TX),rowAvg("Tata 公司退回",TR),rowAvg("Tata 淨額",TX.map((v,i)=>v-TR[i])),...trk.map((s,i)=>rowAvg(s.label,T[i]))]},
+  {name:"租金收入",rows:[hd(["項目","全年(記錄值)","÷12","÷有記錄月份",...mh.slice(1)]),...rent.map((s,i)=>rowAvg(s.label,RN[i])),["租金收入合計",fm2(-rt),fm2(-rt/12),dm?fm2(-rt/dm):""]]},
+  {name:"分類平均",rows:[hd(["分類","全年","÷12","÷有記錄月份",...mh.slice(1)]),...catRows.map(([n,m])=>rowAvg(n.trim(),m))]},
+  {name:"外幣支出",rows:[hd(["月份",...fxc,...(hk?["其中匯豐基金保險"]:[])]),...MO.map(M=>[M.m+"月",...fxc.map(k=>fm2(FX[k][M.m-1])),...(hk?[fm2(HI[M.m-1])]:[])]),["年結",...fxc.map(k=>fm2(sum(FX[k]))),...(hk?[fm2(sum(HI))]:[])]]}]};bindEx();
+ $("#yy").onchange=e=>{yrY=e.target.value;yrC=null;rYr()};$("#yc").onchange=e=>{yrC=e.target.value;rYr()};
+ document.querySelectorAll("[data-inc]").forEach(i=>i.onchange=async()=>{const m=+i.dataset.inc,v=parseFloat(i.value),d=y+"-"+pad(m)+"-01",mo=await gm(d);mo.inc=(mo.inc||[]).filter(x=>x.c!==c);if(v>0)mo.inc.push({a:v,c});await sm(d);rYr()})}
+/* ---------- search, report, export ---------- */
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t.push(c>>>0)}return t})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+function zipBlob(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+ for(const f of files){const nm=enc.encode(f.n),crc=crc32(f.d),h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x800,true);h.setUint16(12,0x21,true);h.setUint32(14,crc,true);h.setUint32(18,f.d.length,true);h.setUint32(22,f.d.length,true);h.setUint16(26,nm.length,true);
+  parts.push(new Uint8Array(h.buffer),nm,f.d);
+  const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x800,true);c.setUint16(14,0x21,true);c.setUint32(16,crc,true);c.setUint32(20,f.d.length,true);c.setUint32(24,f.d.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);cen.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+f.d.length}
+ let cs=0;cen.forEach(a=>cs+=a.length);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+ return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})}
+const xe=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"");
+const colL=i=>{let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s};
+function sheetXml(rows){let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+ rows.forEach((r,i)=>{x+=`<row r="${i+1}">`;r.forEach((v,j)=>{if(v==null||v==="")return;const ref=colL(j)+(i+1),hd=r.hd;
+  if(typeof v==="number"&&isFinite(v))x+=`<c r="${ref}" s="2"><v>${v}</v></c>`;else x+=`<c r="${ref}" t="inlineStr"${hd?' s="1"':""}><is><t xml:space="preserve">${xe(v)}</t></is></c>`});x+="</row>"});return x+"</sheetData></worksheet>"}
+function xlsxBlob(sheets){const enc=new TextEncoder(),sn=sheets.map((s,i)=>xe(String(s.name).replace(/[\\\/?*\[\]:]/g,"_").slice(0,31)||"Sheet"+(i+1)));
+ const files=[{n:"[Content_Types].xml",t:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")+'</Types>'},
+ {n:"_rels/.rels",t:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+ {n:"xl/workbook.xml",t:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sn.map((n,i)=>`<sheet name="${n}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")+'</sheets></workbook>'},
+ {n:"xl/_rels/workbook.xml.rels",t:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")+`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+ {n:"xl/styles.xml",t:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF305496"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>'}];
+ sheets.forEach((s,i)=>files.push({n:`xl/worksheets/sheet${i+1}.xml`,t:sheetXml(s.rows)}));
+ return zipBlob(files.map(f=>({n:f.n,d:enc.encode(f.t)})))}
+async function saveBlob(name,blob){const f=new File([blob],name,{type:blob.type});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e&&e.name==="AbortError")return}}
+ const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const fm2=n=>Math.round(n*100)/100,fmt2=n=>fm2(n).toLocaleString(undefined,{maximumFractionDigits:2});
+async function loadRange(f,t){const ks=idx.filter(k=>k.slice(1)>=f.slice(0,7)&&k.slice(1)<=t.slice(0,7)).sort(),out=[];
+ for(const k of ks){const mo=await gm(k.slice(1)+"-01");for(const d of Object.keys(mo.days).sort())if(d>=f&&d<=t)out.push({d,x:mo.days[d]})}return out}
+function periodUI(){const ys=[...new Set(idx.map(k=>k.slice(1,5)))].sort(),ms=[...idx].sort(),lm=ms.length?ms[ms.length-1].slice(1):TODAY.slice(0,7);
+ return`<div class="cd noprint"><h2>期間</h2><select id="pt"><option value="m">指定月份</option><option value="y">指定年份</option><option value="c">自訂期間</option><option value="a">全部</option></select>
+ <div id="pm"><label>月份</label><input type="month" id="pmv" value="${lm}"></div><div id="py"><label>年份</label><select id="pyv">${ys.map(v=>`<option${v===lm.slice(0,4)?" selected":""}>${v}</option>`).join("")}</select></div>
+ <div id="pc" class="r"><div><label>由</label><input type="date" id="pf" value="${TODAY.slice(0,8)}01"></div><div><label>至</label><input type="date" id="pto" value="${YDAY}"></div></div></div>`}
+function period(){const t=$("#pt").value;let f,to,l;
+ if(t==="m"){const v=$("#pmv").value||TODAY.slice(0,7),[y,m]=v.split("-").map(Number);f=v+"-01";to=v+"-"+pad(DIM(y,m));l=y+" 年 "+m+" 月"}
+ else if(t==="y"){const y=$("#pyv").value;f=y+"-01-01";to=y+"-12-31";l=y+" 年"}
+ else if(t==="c"){f=$("#pf").value;to=$("#pto").value;l=f+" 至 "+to}
+ else{const ms=[...idx].sort(),a=(ms[0]||"m"+TODAY.slice(0,7)).slice(1),z=(ms[ms.length-1]||"m"+TODAY.slice(0,7)).slice(1);f=a+"-01";to=z+"-"+pad(DIM(+z.slice(0,4),+z.slice(5)));l="全部期間"}
+ return{f,to,l,t}}
+function showP(){const t=$("#pt").value;$("#pm").style.display=t==="m"?"":"none";$("#py").style.display=t==="y"?"":"none";$("#pc").style.display=t==="c"?"":"none"}
+function rSr(){$("#sr").innerHTML=periodUI()+`<div class="cd noprint"><h2>搜尋條件(可留空)</h2><label>項目名稱或標籤包含</label><input id="qk" placeholder="例如:コスモ"><div class="r"><div><label>分類</label><select id="qc">${catOpts("")}</select></div><div><label>子分類</label><select id="qs"><option value="">—</option></select></div></div><label>報告的圖表及分類使用的幣種</label><select id="qcur"><option value="">自動(記錄最多的幣種)</option>${cfg.cur.map(c=>`<option>${esc(c)}</option>`).join("")}</select><button class="btn" id="qb">搜尋</button> <button class="btn g" id="rb">產生期間報告</button></div><div id="sro"></div>`;
+ showP();$("#pt").onchange=showP;$("#qc").onchange=()=>{$("#qs").innerHTML=subOpts($("#qc").value,"")};$("#qb").onclick=doSearch;$("#rb").onclick=doReport}
+const exBtns=()=>`<div class="noprint"><button class="btn g" id="xp">輸出 PDF</button> <button class="btn g" id="xx">輸出 Excel (.xlsx)</button><p class="mu">輸出 PDF:在列印畫面選「儲存為 PDF」。</p></div>`;
+function bindEx(){$("#xp").onclick=()=>window.print();$("#xx").onclick=async()=>{try{await saveBlob("life-ledger-"+(srR.type==="search"?"search":"report")+"-"+TODAY+".xlsx",xlsxBlob(srR.sheets))}catch(e){msg("⚠ 輸出失敗:"+(e&&e.message||e))}}}
+const ymList=(f,t)=>{const o=[];let y=+f.slice(0,4),m=+f.slice(5,7);const ey=+t.slice(0,4),em=+t.slice(5,7);while(y<ey||(y===ey&&m<=em)){o.push(y+"-"+pad(m));m++;if(m>12){m=1;y++}}return o};
+async function doSearch(){const P=period(),kw=$("#qk").value.trim().toLowerCase(),cat=$("#qc").value,sub=$("#qs").value,days=await loadRange(P.f,P.to);
+ const rows=[],tot={},bym={};let first=null,last=null;
+ for(const{d,x}of days)for(const e of x.e){
+  if(kw&&!(String(e.n).toLowerCase().includes(kw)||String(e.t||"").toLowerCase().includes(kw)))continue;
+  let a=e.a;if(cat){a=0;for(const p of parts(e))if(p.g===cat&&(!sub||p.s===sub))a+=p.a;if(a===0)continue}
+  rows.push({d,e,a});tot[e.c]=(tot[e.c]||0)+a;const ym=d.slice(0,7);(bym[ym]||(bym[ym]={}))[e.c]=((bym[ym]||{})[e.c]||0)+a;if(!first||d<first)first=d;if(!last||d>last)last=d}
+ const cond=[kw?"關鍵字「"+kw+"」":"",cat?"分類「"+cat+(sub?" › "+sub:"")+"」":""].filter(Boolean).join(" 且 ")||"沒有條件(期間內全部記錄)";
+ const tt=Object.entries(tot).map(([c,a])=>c+" "+fmt2(a)).join(" / ")||"—";
+ const ymk=Object.keys(bym).sort(),sorted=[...rows].sort((a,b)=>b.d.localeCompare(a.d));
+ const lim=sorted.slice(0,200).map(r=>`<tr><td>${r.d}</td><td>${esc(r.e.n)}</td><td>${esc([r.e.g,r.e.s].filter(Boolean).join("›"))}</td><td>${fmt2(r.a)} ${esc(r.e.c)}</td></tr>`).join("");
+ $("#sro").innerHTML=card("搜尋結果 — "+P.l,`<p>條件:${esc(cond)}</p><p><b>符合 ${rows.length} 筆</b>${rows.length?`;合計 ${esc(tt)}`:""}</p>${rows.length?`<p class="mu">最早出現 ${first},最近出現 ${last}。分類合計包括單內拆分的部分,也包括不計入每日合計的項目(例如樂天Pay)。</p>`:""}`)+
+  (ymk.length>1?card("按月合計",`<table class="rk">${ymk.map(m=>`<tr><td>${m}</td><td></td><td></td><td>${Object.entries(bym[m]).map(([c,a])=>fmt2(a)+" "+esc(c)).join(" / ")}</td></tr>`).join("")}</table>`):"")+
+  (rows.length?card("出現日期"+(sorted.length>200?"(顯示最近 200 筆,Excel 輸出包含全部)":""),`<table class="rk">${lim}</table>`):"")+exBtns();
+ const H=["日期","項目","金額","幣種","分類","子分類","付款方式","標籤","Tata","計入每日合計"];
+ srR={type:"search",sheets:[{name:"摘要",rows:[Object.assign(["項目","內容"],{hd:1}),["期間",P.l],["條件",cond],["符合筆數",rows.length],...Object.entries(tot).map(([c,a])=>["合計 "+c,fm2(a)]),["最早出現",first||""],["最近出現",last||""]]},
+  {name:"按月",rows:[Object.assign(["月份","幣種","金額"],{hd:1}),...ymk.flatMap(m=>Object.entries(bym[m]).map(([c,a])=>[m,c,fm2(a)]))]},
+  {name:"明細",rows:[Object.assign(H,{hd:1}),...sorted.map(r=>[r.d,r.e.n,fm2(r.a),r.e.c,r.e.g||"",r.e.s||"",r.e.p||"",r.e.t||"",TT[r.e.tt||""]==="—"?"":TT[r.e.tt],r.e.k===false?"否":"是"])]}]};bindEx()}
+async function doReport(){const P=period(),o=$("#sro");o.innerHTML='<div class="cd mu">計算中…</div>';const days=await loadRange(P.f,P.to);
+ const cc={};days.forEach(({x})=>x.e.forEach(e=>{if(e.k!==false)cc[e.c]=(cc[e.c]||0)+1}));
+ const cur=$("#qcur").value||Object.keys(cc).sort((a,b)=>cc[b]-cc[a])[0]||"JPY",curs=Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).slice(0,4);if(!curs.includes(cur))curs.unshift(cur);
+ const sp={},fx={},inc={},tata={},cats={},items={},mon={};let steps=0,sd=0,cig=0,cigY=0,act=0,drk=0,nd=0;
+ const ml=ymList(P.f,P.to);ml.forEach(m=>mon[m]={sp:0,inc:0,st:0,cg:0,ac:0});
+ for(const{d,x}of days){const v=x.v,m=d.slice(0,7),M=mon[m];nd++;
+  if(typeof v.stp==="number"){steps+=v.stp;sd++;M.st+=v.stp}if(typeof v.cig==="number"){cig+=v.cig;M.cg+=v.cig}else if(v.smk==="Y")cigY++;if(typeof v.act==="number"){act+=v.act;M.ac+=v.act}if(v.drk==="Y")drk++;
+  for(const e of x.e){
+   if(e.tt){const t=tata[e.c]||(tata[e.c]={x:0,r:0});t[e.tt]+=Math.abs(e.a)}
+   if(e.k===false)continue;
+   for(const cu of curs){const val=jv(e,cu);if(val==null)continue;sp[cu]=(sp[cu]||0)+val;if(e.z)fx[cu]=(fx[cu]||0)+val}
+   const val=jv(e,cur);if(val==null)continue;mon[m].sp+=val;
+   {const ra=e.a>0?val/e.a:1,spl=e.a>0?(e.sp||{}):{};let main=val;for(const kk in spl){const pv=spl[kk]*ra;main-=pv;cats[kk]=(cats[kk]||0)+pv}cats[e.g||"(未分類)"]=(cats[e.g||"(未分類)"]||0)+main}
+   if(!e.z&&e.c===cur&&e.g!=="旅行"&&!/住民[税稅]/.test(e.n)){const k=nm0(e.n);items[k]=(items[k]||0)+val}}}
+ ml.forEach(m=>{const[y,mm]=m.split("-").map(Number),full=P.f<=m+"-01"&&P.to>=m+"-"+pad(DIM(y,mm));if(full){const mo=M[mk(m+"-01")];((mo&&mo.inc)||[]).forEach(i=>{inc[i.c]=(inc[i.c]||0)+i.a;if(i.c===cur)mon[m].inc+=i.a})}});
+ const crAll=Object.entries(cats).filter(([k,v])=>Math.abs(v)>0.005).sort((a,b)=>b[1]-a[1]),cr=crAll.filter(x=>x[1]>0),ctot=cr.reduce((a,x)=>a+x[1],0),ir=Object.entries(items).sort((a,b)=>b[1]-a[1]).slice(0,10);
+ const kv=(a,b)=>`<tr><td>${a}</td><td style="text-align:right">${b}</td></tr>`,txtC=o=>Object.entries(o).filter(([c,a])=>a).map(([c,a])=>fmt2(a)+" "+esc(c)).join("<br>")||"—";
+ let h=card("期間報告 — "+P.l,`<table class="rk">${kv("總消費(計入每日合計)",txtC(sp))}${kv("其中必然支出",txtC(fx))}${kv("總收入(只計完整月份)",txtC(inc))}${kv("總步行步數",steps.toLocaleString()+"(有記錄 "+sd+" 天,平均每天 "+(sd?Math.round(steps/sd).toLocaleString():"—")+")")}${kv("總吸煙支數",cig.toLocaleString()+(cigY?"(另有舊記法「有吸煙」"+cigY+" 天)":""))}${kv("總行動數(共同活動次數)",act.toLocaleString())}${kv("飲酒日數",drk+" 天")}${kv("Tata 公務支出 / 公司退回",Object.keys(tata).length?Object.entries(tata).map(([c,t])=>fmt2(t.x)+" / "+fmt2(t.r)+" "+esc(c)).join("<br>"):"—")}</table><p class="mu">各幣種分開計算,不換算;有換算值的外幣記錄按換算值計入該幣種。收入是每月手動輸入的數字,只計算整個月份都在期間內的月份。圖表和分類使用的幣種:${esc(cur)}。</p>`);
+ const labs=[],Q=[],P2=[],S=[];
+ if(nd&&(Date.parse(P.to)-Date.parse(P.f))/864e5<=400){let cum=0,k=0;for(let d=P.f;d<=P.to;d=addD(d,1)){const x=(M[mk(d)]||{days:{}}).days[d];let q=0;if(x)for(const e of x.e){if(e.k===false||e.z)continue;const val=jv(e,cur);if(val!=null)q+=val}
+  k++;cum+=q;labs.push(d.slice(5).replace("-","/"));Q.push(q);P2.push(cum/k);S.push(x&&typeof x.v.stp==="number"?x.v.stp:null)}
+  h+=sLine("每日消費("+cur+")",labs,[{n:"每日平均",v:P2},{n:"每日消費",v:Q}]);if(S.some(v=>v!=null))h+=sLine("每日步數",labs,[{n:"每日步數",v:S}])}
+ if(ml.length>1){h+=sBar("每月消費("+cur+")",ml,[{n:"每月消費",v:ml.map(m=>mon[m].sp)}]);h+=sBar("每月步數",ml,[{n:"每月步數",v:ml.map(m=>mon[m].st)}])}
+ h+=sPie("分類消費("+cur+",前 8 名)",cr.slice(0,8).map(([n,v])=>({n,v})));
+ h+=card("分類消費("+cur+")",`<table class="rk">${crAll.map(([k,v])=>`<tr><td>${esc(k)}</td><td></td><td>${fmt2(v)}</td><td>${ctot?Math.round(v/ctot*1000)/10:0}%</td></tr>`).join("")}</table><p class="mu">退款(負數)已從分類扣除。</p>`);
+ h+=card("項目排行(前 10;不含必然支出、外幣換算項目、旅行分類和住民稅)",`<table class="rk">${ir.map(([k,v],i)=>`<tr><td>${i+1}</td><td>${esc(k)}</td><td>${fmt2(v)}</td></tr>`).join("")}</table>`);
+ if(ml.length>1)h+=card("按月",`<table class="rk">${ml.map(m=>`<tr><td>${m}</td><td>${fmt2(mon[m].sp)}</td><td>${fmt2(mon[m].inc)}</td><td>${mon[m].st.toLocaleString()}步</td></tr>`).join("")}</table><p class="mu">欄位:月份、消費、收入(${esc(cur)})、步數。</p>`);
+ o.innerHTML=h+exBtns();
+ const hd=a=>Object.assign(a,{hd:1}),detail=[];for(const{d,x}of days)for(const e of x.e)detail.push([d,e.n,fm2(e.a),e.c,e.g||"",e.s||"",e.p||"",e.t||"",e.tt?TT[e.tt]:"",e.k===false?"否":"是",e.sp&&e.sp["飲酒"]||"",e.sp&&e.sp["煙"]||""]);
+ srR={type:"report",sheets:[{name:"摘要",rows:[hd(["項目","內容","幣種"]),["期間",P.l],["圖表及分類幣種",cur],...Object.entries(sp).map(([c,a])=>["總消費(計入每日合計)",fm2(a),c]),...Object.entries(fx).map(([c,a])=>["其中必然支出",fm2(a),c]),...Object.entries(inc).map(([c,a])=>["總收入(只計完整月份)",fm2(a),c]),["總步行步數",steps],["有步數記錄日數",sd],["總吸煙支數",cig],["總行動數",act],["飲酒日數",drk],...Object.entries(tata).flatMap(([c,t])=>[["Tata 公務支出",fm2(t.x),c],["Tata 公司退回",fm2(t.r),c]])]},
+  {name:"分類消費",rows:[hd(["分類","金額("+cur+")","佔比"]),...crAll.map(([k,v])=>[k,fm2(v),ctot?Math.round(v/ctot*1000)/1000:0])]},{name:"項目排行",rows:[hd(["排名","項目","金額("+cur+")"]),...ir.map(([k,v],i)=>[i+1,k,fm2(v)])]},
+  {name:"每月",rows:[hd(["月份","消費("+cur+")","收入("+cur+")","步數","吸煙支數","行動數"]),...ml.map(m=>[m,fm2(mon[m].sp),fm2(mon[m].inc),mon[m].st,mon[m].cg,mon[m].ac])]},
+  {name:"明細",rows:[hd(["日期","項目","金額","幣種","分類","子分類","付款方式","標籤","Tata","計入每日合計","其中飲酒","其中煙"]),...detail]},
+  {name:"每日項目",rows:[hd(["日期","飲酒","行動","吸煙","步數","步數排名","體重"]),...days.filter(({x})=>Object.keys(x.v).length).map(({d,x})=>[d,x.v.drk||"",x.v.act==null?"":x.v.act,x.v.cig==null?(x.v.smk||""):x.v.cig,x.v.stp==null?"":x.v.stp,x.v.rnk==null?"":x.v.rnk,x.v.weight==null?"":x.v.weight])]}]};bindEx()}
 /* ---------- Dropbox (OAuth PKCE, App Folder) ---------- */
 const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const DBX={st:{},redirect:()=>location.origin+location.pathname,
@@ -256,14 +400,14 @@ function rBa(){const c=!!DBX.st.rt,lb=cfg.lb||"從未備份";
  $("#bf").onchange=async e=>{const f=e.target.files[0];if(!f)return;$("#bs").textContent="讀取檔案…";try{await imp(await f.text())}catch(err){$("#bs").textContent="讀取失敗:"+(err&&err.message||err)}};
  if(dp)$("#ins").onclick=async()=>{dp.prompt();await dp.userChoice;dp=null;rBa()}}
 function tab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
- document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id===t));({in:rIn,hi:()=>rHi(),se:rSe,ch:()=>rCh(),ba:rBa})[t]()}
+ document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id===t));({in:rIn,hi:()=>rHi(),se:rSe,ch:()=>rCh(),yr:()=>rYr(),sr:rSr,ba:rBa})[t]()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e});
 window.addEventListener("online",()=>sched(1000));
 (async()=>{try{await DBX.load();const q=new URLSearchParams(location.search);
  if(q.get("code")){try{await DBX.finish(q.get("code"))}catch(e){msg("⚠ Dropbox 連接失敗:"+e.message)}history.replaceState(null,"",location.pathname)}
  else if(q.get("error")){msg("Dropbox 連接已取消");history.replaceState(null,"",location.pathname)}
- cfg=await ld("cfg")||JSON.parse(JSON.stringify(DEF));if(!cfg.cats)cfg.cats=JSON.parse(JSON.stringify(DEFCATS));const i=await ld("idx");idx=i&&i.list||[];FQ=await ld("freq")||{};
+ cfg=await ld("cfg")||JSON.parse(JSON.stringify(DEF));if(!cfg.cats)cfg.cats=JSON.parse(JSON.stringify(DEFCATS));if(!cfg.trk)cfg.trk=DEFTRK.slice();if(!cfg.rent)cfg.rent=DEFRENT.slice();const i=await ld("idx");idx=i&&i.list||[];FQ=await ld("freq")||{};
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
  if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
  if(!$("#st").textContent.startsWith("⚠"))msg(DBX.st.rt?"已連接 Dropbox":"資料存在這部手機(尚未連接 Dropbox)");
